@@ -19,10 +19,6 @@ func MainHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Only POST request is allowed!", http.StatusMethodNotAllowed)
 		return
 	}
-	if r.Header.Get("Content-Type") != "text/plain" {
-        http.Error(w, "Unsupported content type", http.StatusBadRequest)
-        return
-    }
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()

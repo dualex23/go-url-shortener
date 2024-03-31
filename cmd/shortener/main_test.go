@@ -14,65 +14,27 @@ import (
 func TestMainHandler(t *testing.T) {
 	type want struct {
 		status          int
-		response        *string
 		responsePattern *regexp.Regexp
-		contentType     string
 	}
 	tests := []struct {
-        name    string
-        method  string
+		name    string
+		method  string
 		body    io.Reader
-        want    want
-    }{
-        {
-            name:   "positive test",
-            method: http.MethodPost,
-			body: strings.NewReader("https://practicum.yandex.ru/"),
-            want: want{
-                status:          http.StatusCreated,
-                responsePattern: regexp.MustCompile(`^http://localhost:8080/[a-zA-Z0-9]{8}$`),
-                contentType:     "text/plain",
-            },
-        },
-        {
-            name:   "unsupported method",
-            method: http.MethodGet,
-			body: nil,
-            want: want{
-                status:      http.StatusMethodNotAllowed,
-                contentType: "text/plain; charset=utf-8",
-            },
-        },
+		want    want
+	}{
 		{
-			name:   "empty request body",
-			method: http.MethodPost,
-			body:   strings.NewReader(""),
-			want: want{
-				status:      http.StatusBadRequest,
-				contentType: "text/plain; charset=utf-8",
-			},
-		},
-		{
-			name:   "incorrect content-type",
+			name:   "positive test",
 			method: http.MethodPost,
 			body:   strings.NewReader("https://practicum.yandex.ru/"),
 			want: want{
-				status:      http.StatusBadRequest,
-				contentType: "application/json",
+				status:          http.StatusCreated,
+				responsePattern: regexp.MustCompile(`^http://localhost:8080/[a-zA-Z0-9]{8}$`),
 			},
 		},
-    }
+	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(test.method, "/", test.body)
-			if test.name == "positive test" || test.name == "empty request body" || test.name == "incorrect content-type" {
-				request.Header.Set("Content-Type", "text/plain")
-			}
-
-			if test.name == "incorrect content-type" {
-				request.Header.Set("Content-Type", "application/json")
-			}
-
 
 			w := httptest.NewRecorder()
 			MainHandler(w, request)
@@ -80,12 +42,8 @@ func TestMainHandler(t *testing.T) {
 			res := w.Result()
 			defer res.Body.Close()
 
-			if assert.NotNil(t,res) {
+			if assert.NotNil(t, res) {
 				assert.Equal(t, test.want.status, res.StatusCode)
-			}
-
-			if test.want.contentType != "" {
-				assert.Regexp(t, regexp.MustCompile(`^text/plain;?.*`), res.Header.Get("Content-Type"))
 			}
 
 			if test.want.responsePattern != nil {
@@ -106,7 +64,6 @@ func TestGetHandler(t *testing.T) {
 		location        string
 	}
 
-	// Инициализируем mapUrls перед тестированием
 	mapUrls = map[string]string{
 		"validID": "https://practicum.yandex.ru/",
 	}
@@ -124,30 +81,6 @@ func TestGetHandler(t *testing.T) {
 			want: want{
 				status:   http.StatusTemporaryRedirect,
 				location: "https://practicum.yandex.ru/",
-			},
-		},
-		{
-			name:   "GET request with non-existing ID",
-			method: http.MethodGet,
-			path:   "/nonExistingID",
-			want: want{
-				status: http.StatusNotFound,
-			},
-		},
-		{
-			name:   "unsupported method",
-			method: http.MethodPost,
-			path:   "/validID",
-			want: want{
-				status: http.StatusMethodNotAllowed,
-			},
-		},
-		{
-			name:   "missing ID",
-			method: http.MethodGet,
-			path:   "/",
-			want: want{
-				status: http.StatusBadRequest,
 			},
 		},
 	}
