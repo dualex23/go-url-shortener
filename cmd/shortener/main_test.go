@@ -162,26 +162,21 @@ func TestGetHandler(t *testing.T) {
 			res := w.Result()
 			defer res.Body.Close()
 
-			// Проверяем статус ответа
 			assert.Equal(t, tc.want.status, res.StatusCode)
 
-			// Проверяем Location, если он указан в ожидаемом результате
 			if tc.want.location != "" {
 				assert.Equal(t, tc.want.location, res.Header.Get("Location"))
 			}
 
-			// Проверяем Content-Type, если он указан в ожидаемом результате
 			if tc.want.contentType != "" {
 				assert.Equal(t, tc.want.contentType, res.Header.Get("Content-Type"))
 			}
 
-			// Если есть ожидаемый ответ, проверяем его
 			if tc.want.response != nil {
 				body, _ := io.ReadAll(res.Body)
 				assert.Equal(t, *tc.want.response, string(body))
 			}
 
-			// Если есть паттерн для проверки ответа, используем его
 			if tc.want.responsePattern != nil {
 				body, _ := io.ReadAll(res.Body)
 				assert.Regexp(t, tc.want.responsePattern, string(body))
