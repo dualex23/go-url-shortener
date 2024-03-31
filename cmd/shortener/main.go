@@ -14,18 +14,24 @@ var (
 	mapUrls = make(map[string]string) // "abcDeFgh: https://practicum.yandex.ru/"
 )
 
-func mainHandler(w http.ResponseWriter, r *http.Request) {
+func MainHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST request is allowed!", http.StatusMethodNotAllowed)
 		return
 	}
+	if r.Header.Get("Content-Type") != "text/plain" {
+        http.Error(w, "Unsupported content type", http.StatusBadRequest)
+        return
+    }
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
-	if err != nil {
-		http.Error(w, "Could not read request body", http.StatusBadRequest)
-		return
-	}
+
+    if err != nil || len(body) == 0 {
+        http.Error(w, "Request body cannot be empty", http.StatusBadRequest)
+        return
+    }
+
 	originalURL := string(body)
 
 	id := uuid.New().String()[:8]
@@ -38,7 +44,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(fmt.Sprintf("%s/%s", baseURL, shortenedURL)))
 }
 
-func getHandler(w http.ResponseWriter, r *http.Request){
+func GetHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Only GET request is allowed!", http.StatusMethodNotAllowed)
 		return
@@ -61,18 +67,19 @@ func getHandler(w http.ResponseWriter, r *http.Request){
 		w.Header().Set("Location", returnedURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	} else {
-		w.WriteHeader(http.StatusBadRequest)                   
+		w.WriteHeader(http.StatusBadRequest)
 	}
 }
+
 
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
-			mainHandler(w, r)
+			MainHandler(w, r)
 		case http.MethodGet:
-			getHandler(w, r)
+			GetHandler(w, r)
 		default:
 			http.Error(w, "Not Found", http.StatusBadRequest)
 		}
