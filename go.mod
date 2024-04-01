@@ -2,7 +2,10 @@ module github.com/dualex23/go-url-shortener
 
 go 1.21.8
 
+replace github.com/dualex23/go-url-shortener/internal/app/handlers => ./internal/app/handlers
+
 require (
+	github.com/go-chi/chi/v5 v5.0.12
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
 )
