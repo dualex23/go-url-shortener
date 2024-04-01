@@ -4,26 +4,33 @@ import (
 	// стандартные библиотеки
 
 	// сторонние библиотеки
+
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 
 	// дергаем свои пакеты
+
 	"github.com/dualex23/go-url-shortener/internal/app/config"
-	"github.com/dualex23/go-url-shortener/internal/app/handlers"
+	"github.com/dualex23/go-url-shortener/internal/app/handler"
 )
 
 func main() {
-	c := &config.App{
-		Port: ":8080",
-	}
+	appConfig := config.AppParseFlags()
 
 	r := chi.NewRouter()
+	
+	shortenerHandler := handler.NewShortenerHandler(appConfig.BaseURL)
 
-	r.Post("/", handlers.MainHandler)
-	r.Get("/{id}",handlers.GetHandler) 
+	r.Post("/", shortenerHandler.MainHandler)
+	r.Get("/{id}",shortenerHandler.GetHandler)
 
-	err := http.ListenAndServe(c.Port, r)
+	// debug
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Привет "+appConfig.ServerAddr +" "+appConfig.BaseURL))
+	})
+	
+	err := http.ListenAndServe(appConfig.ServerAddr, r)
 	if err != nil {
 		panic(err)
 	}

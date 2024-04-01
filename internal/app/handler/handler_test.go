@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"io"
@@ -12,6 +12,8 @@ import (
 )
 
 func TestMainHandler(t *testing.T) {
+	handler := NewShortenerHandler("http://localhost:8080")
+
 	type want struct {
 		status          int
 		responsePattern *regexp.Regexp
@@ -27,8 +29,8 @@ func TestMainHandler(t *testing.T) {
 			method: http.MethodPost,
 			body:   strings.NewReader("https://practicum.yandex.ru/"),
 			want: want{
-				status:          http.StatusCreated,
-				responsePattern: regexp.MustCompile(`^http://localhost:8080/[a-zA-Z0-9]{8}$`),
+				status: http.StatusCreated,
+        		responsePattern: regexp.MustCompile(`^http://localhost:8080/[a-zA-Z0-9]{8}$`),
 			},
 		},
 	}
@@ -37,7 +39,7 @@ func TestMainHandler(t *testing.T) {
 			request := httptest.NewRequest(test.method, "/", test.body)
 
 			w := httptest.NewRecorder()
-			MainHandler(w, request)
+			handler.MainHandler(w, request)
 
 			res := w.Result()
 			defer res.Body.Close()
@@ -64,9 +66,8 @@ func TestGetHandler(t *testing.T) {
 		location        string
 	}
 
-	mapUrls = map[string]string{
-		"validID": "https://practicum.yandex.ru/",
-	}
+	handler := NewShortenerHandler("http://localhost:8080")
+	handler.MapURLs["validID"] = "https://practicum.yandex.ru/"
 
 	tests := []struct {
 		name   string
@@ -90,7 +91,7 @@ func TestGetHandler(t *testing.T) {
 			request := httptest.NewRequest(tc.method, tc.path, nil)
 			w := httptest.NewRecorder()
 
-			GetHandler(w, request)
+			handler.GetHandler(w, request)
 
 			res := w.Result()
 			defer res.Body.Close()

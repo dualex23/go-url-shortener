@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"fmt"
@@ -9,12 +9,24 @@ import (
 	"github.com/google/uuid"
 )
 
-var (
-	baseURL = "http://localhost:8080"
-	mapUrls = make(map[string]string) // "abcDeFgh: https://practicum.yandex.ru/"
-)
+// var (
+// 	baseURL = "http://localhost:8080"
+// 	mapUrls = make(map[string]string) // "abcDeFgh: https://practicum.yandex.ru/"
+// )
 
-func MainHandler(w http.ResponseWriter, r *http.Request) {
+type ShortenerHandler struct {
+	BaseURL string
+	MapURLs map[string]string
+}
+
+func NewShortenerHandler(baseURL string) *ShortenerHandler {
+	return &ShortenerHandler{
+		BaseURL: baseURL,
+		MapURLs: make(map[string]string),
+	}
+}
+
+func (h *ShortenerHandler) MainHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST request is allowed!", http.StatusMethodNotAllowed)
 		return
@@ -31,16 +43,18 @@ func MainHandler(w http.ResponseWriter, r *http.Request) {
 	originalURL := string(body)
 
 	id := uuid.New().String()[:8]
-	mapUrls[id] = originalURL
+
+	h.MapURLs[id] = originalURL
 
 	shortenedURL := id
 
+	fmt.Printf("%s/%s", h.BaseURL, id)
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(fmt.Sprintf("%s/%s", baseURL, shortenedURL)))
+	w.Write([]byte(fmt.Sprintf("%s/%s", h.BaseURL, shortenedURL)))
 }
 
-func GetHandler(w http.ResponseWriter, r *http.Request) {
+func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Only GET request is allowed!", http.StatusMethodNotAllowed)
 		return
@@ -51,7 +65,7 @@ func GetHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing ID", http.StatusBadRequest)
 		return
 	}
-	idiInMapUrls, ok := mapUrls[id]
+	idiInMapUrls, ok := h.MapURLs[id]
 	if !ok {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
@@ -65,4 +79,5 @@ func GetHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 	}
+	fmt.Fprintln(w, "Перенаправление на URL")
 }
