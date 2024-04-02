@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	"os"
 )
 
 type App struct {
@@ -11,17 +12,25 @@ type App struct {
 }
 
 func AppParseFlags() *App {
-	var serverAddr, baseURL string
+	var appConfig App
+
+	// значения по умолчанию.
+    appConfig.ServerAddr = "localhost:8080"
+    appConfig.BaseURL = "http://localhost:8080"
 	
-	flag.StringVar(&serverAddr, "a", "localhost:8080", "Адрес запуска HTTP-сервера")
-	flag.StringVar(&baseURL, "b", "http://localhost:8080", "Базовый адрес результирующего сокращённого URL")
-	flag.Parse()
+	flag.StringVar(&appConfig.ServerAddr, "a", appConfig.ServerAddr, "Адрес запуска HTTP-сервера")
+    flag.StringVar(&appConfig.BaseURL, "b", appConfig.BaseURL, "Базовый адрес результирующего сокращённого URL")
+    flag.Parse()
 
-	fmt.Printf("Сервер: POST %s\n", serverAddr)
-	fmt.Printf("Базовый адрес: GET %s\n", baseURL)
+    if envAddr := os.Getenv("SERVER_ADDRESS"); envAddr != "" {
+        appConfig.ServerAddr = envAddr
+    }
+    if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
+        appConfig.BaseURL = envBaseURL
+    }
 
-	return &App{
-		ServerAddr: serverAddr,
-		BaseURL:    baseURL,
-	}
+	fmt.Printf("APF Сервер: POST %s\n", appConfig.ServerAddr)
+	fmt.Printf("APF Базовый адрес: GET %s\n", appConfig.BaseURL)
+
+	return &appConfig
 }

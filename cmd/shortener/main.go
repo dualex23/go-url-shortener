@@ -15,9 +15,11 @@ import (
 	"github.com/dualex23/go-url-shortener/internal/app/handler"
 )
 
+
+
 func main() {
 	appConfig := config.AppParseFlags()
-
+	
 	r := chi.NewRouter()
 	
 	shortenerHandler := handler.NewShortenerHandler(appConfig.BaseURL)
