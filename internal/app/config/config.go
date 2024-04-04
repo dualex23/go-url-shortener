@@ -2,7 +2,6 @@ package config
 
 import (
 	"flag"
-	"fmt"
 	"os"
 )
 
@@ -14,7 +13,6 @@ type App struct {
 func AppParseFlags() *App {
 	var appConfig App
 
-	// значения по умолчанию.
     appConfig.ServerAddr = "localhost:8080"
     appConfig.BaseURL = "http://localhost:8080"
 	
@@ -28,9 +26,6 @@ func AppParseFlags() *App {
     if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
         appConfig.BaseURL = envBaseURL
     }
-
-	fmt.Printf("APF Сервер: POST %s\n", appConfig.ServerAddr)
-	fmt.Printf("APF Базовый адрес: GET %s\n", appConfig.BaseURL)
 
 	return &appConfig
 }

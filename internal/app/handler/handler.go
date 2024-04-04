@@ -5,18 +5,15 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/google/uuid"
 )
 
-// var (
-// 	baseURL = "http://localhost:8080"
-// 	mapUrls = make(map[string]string) // "abcDeFgh: https://practicum.yandex.ru/"
-// )
-
 type ShortenerHandler struct {
 	BaseURL string
 	MapURLs map[string]string
+	mx sync.RWMutex
 }
 
 func NewShortenerHandler(baseURL string) *ShortenerHandler {
@@ -44,11 +41,12 @@ func (h *ShortenerHandler) MainHandler(w http.ResponseWriter, r *http.Request) {
 
 	id := uuid.New().String()[:8]
 
+	h.mx.Lock()
 	h.MapURLs[id] = originalURL
+	h.mx.Unlock()
 
 	shortenedURL := id
 
-	fmt.Printf("%s/%s", h.BaseURL, id)
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(fmt.Sprintf("%s/%s", h.BaseURL, shortenedURL)))
@@ -65,19 +63,19 @@ func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing ID", http.StatusBadRequest)
 		return
 	}
+	h.mx.RLock()
 	idiInMapUrls, ok := h.MapURLs[id]
+	h.mx.RUnlock()
+
 	if !ok {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
 
-	returnedURL := idiInMapUrls
-
 	if strings.HasPrefix(r.URL.Path, "/") && len(r.URL.Path) > 1 {
-		w.Header().Set("Location", returnedURL)
+		w.Header().Set("Location", idiInMapUrls)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 	}
-	fmt.Fprintln(w, "Перенаправление на URL")
 }
