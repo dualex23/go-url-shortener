@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -19,18 +20,18 @@ func TestMainHandler(t *testing.T) {
 		responsePattern *regexp.Regexp
 	}
 	tests := []struct {
-		name    string
-		method  string
-		body    io.Reader
-		want    want
+		name   string
+		method string
+		body   io.Reader
+		want   want
 	}{
 		{
 			name:   "positive test",
 			method: http.MethodPost,
 			body:   strings.NewReader("https://practicum.yandex.ru/"),
 			want: want{
-				status: http.StatusCreated,
-        		responsePattern: regexp.MustCompile(`^http://localhost:8080/[a-zA-Z0-9]{8}$`),
+				status:          http.StatusCreated,
+				responsePattern: regexp.MustCompile(`^http://localhost:8080/[a-zA-Z0-9]{8}$`),
 			},
 		},
 	}
@@ -119,3 +120,68 @@ func TestGetHandler(t *testing.T) {
 	}
 }
 
+func TestApiHandler(t *testing.T) {
+	handler := NewShortenerHandler("http://localhost:8080")
+
+	type want struct {
+		status          int
+		responsePattern *regexp.Regexp
+	}
+	tests := []struct {
+		name   string
+		method string
+		body   io.Reader
+		want   want
+	}{
+		{
+			name:   "positive test",
+			method: http.MethodPost,
+			body:   bytes.NewReader([]byte(`{"url":"https://practicum.yandex.ru/"}`)),
+			want: want{
+				status:          http.StatusCreated,
+				responsePattern: regexp.MustCompile(`{"result":"http://localhost:8080/[a-zA-Z0-9]{8}"}`),
+			},
+		},
+		{
+			name:   "negative test - empty URL",
+			method: http.MethodPost,
+			body:   bytes.NewReader([]byte(`{"url":""}`)),
+			want: want{
+				status:          http.StatusBadRequest,
+				responsePattern: regexp.MustCompile(`URL field is required`),
+			},
+		},
+		{
+			name:   "negative test - wrong method",
+			method: http.MethodGet,
+			body:   nil,
+			want: want{
+				status:          http.StatusMethodNotAllowed,
+				responsePattern: regexp.MustCompile(`Only POST request is allowed!`),
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(test.method, "/api/shorten", test.body)
+			request.Header.Add("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+			handler.ApiHandler(w, request)
+
+			res := w.Result()
+			defer res.Body.Close()
+
+			if assert.NotNil(t, res) {
+				assert.Equal(t, test.want.status, res.StatusCode)
+			}
+
+			if test.want.responsePattern != nil {
+				resBody, err := io.ReadAll(res.Body)
+				assert.NoError(t, err)
+				assert.Regexp(t, test.want.responsePattern, string(resBody))
+			}
+		})
+	}
+}

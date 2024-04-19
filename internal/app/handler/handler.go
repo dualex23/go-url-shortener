@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,7 +14,7 @@ import (
 type ShortenerHandler struct {
 	BaseURL string
 	MapURLs map[string]string
-	mx sync.RWMutex
+	mx      sync.RWMutex
 }
 
 func NewShortenerHandler(baseURL string) *ShortenerHandler {
@@ -59,6 +60,7 @@ func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := strings.TrimPrefix(r.URL.Path, "/")
+
 	if id == "" {
 		http.Error(w, "Missing ID", http.StatusBadRequest)
 		return
@@ -78,4 +80,38 @@ func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 	}
+}
+
+func (h *ShortenerHandler) ApiHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Only POST request is allowed!", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var input struct {
+		URL string `json:"url"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&input)
+	defer r.Body.Close()
+
+	if err != nil {
+		http.Error(w, "Error reading JSON", http.StatusBadRequest)
+		return
+	}
+
+	if input.URL == "" {
+		http.Error(w, "URL field is required", http.StatusBadRequest)
+		return
+	}
+
+	id := uuid.New().String()[:8]
+	h.mx.Lock()
+	h.MapURLs[id] = input.URL
+	h.mx.Unlock()
+
+	shortenedURL := fmt.Sprintf("%s/%s", h.BaseURL, id)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"result": shortenedURL})
 }

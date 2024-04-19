@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -25,7 +26,9 @@ func main() {
 	r.Use(middleware.WithLogging)
 	r.Post("/", shortenerHandler.MainHandler)
 	r.Get("/{id}", shortenerHandler.GetHandler)
+	r.Post("/api/shorten", shortenerHandler.ApiHandler)
 
+	fmt.Printf("Server is started: %s\n", appConfig.ServerAddr)
 	err := http.ListenAndServe(appConfig.ServerAddr, r)
 	if err != nil {
 		log.Fatal(err)
