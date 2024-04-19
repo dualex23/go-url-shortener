@@ -168,7 +168,7 @@ func TestApiHandler(t *testing.T) {
 			request.Header.Add("Content-Type", "application/json")
 
 			w := httptest.NewRecorder()
-			handler.ApiHandler(w, request)
+			handler.APIHandler(w, request)
 
 			res := w.Result()
 			defer res.Body.Close()

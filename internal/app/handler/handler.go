@@ -82,7 +82,7 @@ func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *ShortenerHandler) ApiHandler(w http.ResponseWriter, r *http.Request) {
+func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST request is allowed!", http.StatusMethodNotAllowed)
 		return

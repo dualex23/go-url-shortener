@@ -26,7 +26,7 @@ func main() {
 	r.Use(middleware.WithLogging)
 	r.Post("/", shortenerHandler.MainHandler)
 	r.Get("/{id}", shortenerHandler.GetHandler)
-	r.Post("/api/shorten", shortenerHandler.ApiHandler)
+	r.Post("/api/shorten", shortenerHandler.APIHandler)
 
 	fmt.Printf("Server is started: %s\n", appConfig.ServerAddr)
 	err := http.ListenAndServe(appConfig.ServerAddr, r)
