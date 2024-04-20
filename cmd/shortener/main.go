@@ -23,7 +23,7 @@ func main() {
 
 	shortenerHandler := handler.NewShortenerHandler(appConfig.BaseURL)
 
-	r.Use(middleware.WithLogging)
+	r.Use(middleware.GzipMiddleware, middleware.WithLogging)
 	r.Post("/", shortenerHandler.MainHandler)
 	r.Get("/{id}", shortenerHandler.GetHandler)
 	r.Post("/api/shorten", shortenerHandler.APIHandler)
