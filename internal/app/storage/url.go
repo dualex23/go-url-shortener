@@ -16,7 +16,7 @@ type URLData struct {
 }
 
 var (
-	StoragePath string = "./tmp/short-url-db.json"
+	StoragePath string = "./../../tmp/short-url-db.json"
 	UrlsData    []URLData
 	mu          sync.Mutex
 )
