@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"sync"
 )
 
@@ -15,7 +16,7 @@ type URLData struct {
 }
 
 var (
-	StoragePath string = "../../data.json"
+	StoragePath string = "./tmp/short-url-db.json"
 	UrlsData    []URLData
 	mu          sync.Mutex
 )
@@ -40,6 +41,11 @@ func SaveURLsData() error {
 	mu.Lock()
 	defer mu.Unlock()
 
+	if err := ensureDir(StoragePath); err != nil {
+		log.Printf("Не удалось создать директорию: %v", err)
+		return err
+	}
+
 	data, err := json.MarshalIndent(UrlsData, "", " ")
 	if err != nil {
 		return err
@@ -47,7 +53,8 @@ func SaveURLsData() error {
 
 	err = os.WriteFile(StoragePath, data, 0644)
 	if err != nil {
-		log.Fatal("Ошибка при записи данных URL в файл:", err)
+		log.Printf("Ошибка при записи данных URL в файл: %v", err)
+		return err
 	}
 
 	return nil
@@ -57,9 +64,11 @@ func LoadData(dataPath string) error {
 	file, err := os.Open(dataPath)
 	if err != nil {
 		if os.IsNotExist(err) {
+			log.Println("Файл не найден, инициализация пустого списка URL")
 			UrlsData = []URLData{}
 			return nil
 		}
+		log.Printf("Ошибка при открытии файла: %v", err)
 		return err
 	}
 	defer file.Close()
@@ -67,7 +76,16 @@ func LoadData(dataPath string) error {
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&UrlsData)
 	if err != nil {
+		log.Printf("Ошибка при декодировании данных из файла: %v", err)
 		return err
+	}
+	return nil
+}
+
+func ensureDir(filePath string) error {
+	dir := filepath.Dir(filePath)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		return os.MkdirAll(dir, 0755)
 	}
 	return nil
 }
