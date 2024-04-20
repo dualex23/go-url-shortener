@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/dualex23/go-url-shortener/internal/app/storage"
 	"github.com/google/uuid"
 )
 
@@ -105,11 +106,22 @@ func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := uuid.New().String()[:8]
+	shortenedURL := fmt.Sprintf("%s/%s", h.BaseURL, id)
+
+	urlData := storage.URLData{
+		ID:          id,
+		OriginalURL: input.URL,
+		ShortURL:    shortenedURL,
+	}
+
 	h.mx.Lock()
 	h.MapURLs[id] = input.URL
+	storage.UrlsData = append(storage.UrlsData, urlData)
 	h.mx.Unlock()
 
-	shortenedURL := fmt.Sprintf("%s/%s", h.BaseURL, id)
+	if err := storage.SaveURLsData(); err != nil {
+		http.Error(w, "Failed to save data", http.StatusInternalServerError)
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)

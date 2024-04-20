@@ -10,6 +10,7 @@ import (
 	"github.com/dualex23/go-url-shortener/internal/app/config"
 	"github.com/dualex23/go-url-shortener/internal/app/handler"
 	"github.com/dualex23/go-url-shortener/internal/app/middleware"
+	"github.com/dualex23/go-url-shortener/internal/app/storage"
 	"github.com/dualex23/go-url-shortener/internal/app/utils"
 )
 
@@ -18,6 +19,7 @@ func main() {
 	defer utils.GetLogger().Sync()
 
 	appConfig := config.AppParseFlags()
+	storage.Init(appConfig.FileStoragePath)
 
 	r := chi.NewRouter()
 
