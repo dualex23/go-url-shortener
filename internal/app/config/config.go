@@ -19,11 +19,11 @@ func AppParseFlags() *App {
 
 	appConfig.ServerAddr = "localhost:8080"
 	appConfig.BaseURL = "http://localhost:8080"
-	defaultFileName := "./tmp/short-url-db.json"
+	defaultFilePath := "/tmp/short-url-db.json"
 
 	flag.StringVar(&appConfig.ServerAddr, "a", appConfig.ServerAddr, "Адрес запуска HTTP-сервера")
 	flag.StringVar(&appConfig.BaseURL, "b", appConfig.BaseURL, "Базовый адрес результирующего сокращённого URL")
-	flag.StringVar(&appConfig.FileStoragePath, "f", defaultFileName, "Базовое имя файла данных без расширения .json")
+	flag.StringVar(&appConfig.FileStoragePath, "f", defaultFilePath, "Путь к файлу данных")
 	flag.Parse()
 
 	err := godotenv.Load()
@@ -37,9 +37,8 @@ func AppParseFlags() *App {
 	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
 		appConfig.BaseURL = envBaseURL
 	}
-
-	if envFileName := os.Getenv("FILE_STORAGE_PATH"); envFileName != "" {
-		appConfig.FileStoragePath = envFileName
+	if envFilePath := os.Getenv("FILE_STORAGE_PATH"); envFilePath != "" {
+		appConfig.FileStoragePath = envFilePath
 	}
 
 	return &appConfig
