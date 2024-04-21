@@ -3,10 +3,7 @@ package config
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
 type App struct {
@@ -21,11 +18,6 @@ func AppParseFlags() *App {
 	appConfig.ServerAddr = "localhost:8080"
 	appConfig.BaseURL = "http://localhost:8080"
 	defaultFileName := "short-url-db"
-
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error loading .env file: %s", err)
-	}
 
 	fileName := defaultFileName
 	flag.StringVar(&appConfig.ServerAddr, "a", appConfig.ServerAddr, "Адрес запуска HTTP-сервера")
