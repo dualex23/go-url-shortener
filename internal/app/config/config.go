@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/joho/godotenv"
 )
@@ -17,9 +18,12 @@ type App struct {
 func AppParseFlags() *App {
 	var appConfig App
 
+	baseDir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+	dataDir := filepath.Join(baseDir, "data", "tmp")
+
 	appConfig.ServerAddr = "localhost:8080"
 	appConfig.BaseURL = "http://localhost:8080"
-	defaultFilePath := "/tmp/short-url-db.json"
+	defaultFilePath := filepath.Join(dataDir, "short-url-db.json")
 
 	flag.StringVar(&appConfig.ServerAddr, "a", appConfig.ServerAddr, "Адрес запуска HTTP-сервера")
 	flag.StringVar(&appConfig.BaseURL, "b", appConfig.BaseURL, "Базовый адрес результирующего сокращённого URL")
@@ -39,6 +43,8 @@ func AppParseFlags() *App {
 	}
 	if envFilePath := os.Getenv("FILE_STORAGE_PATH"); envFilePath != "" {
 		appConfig.FileStoragePath = envFilePath
+	} else {
+		appConfig.FileStoragePath = defaultFilePath
 	}
 
 	return &appConfig
