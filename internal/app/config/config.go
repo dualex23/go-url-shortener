@@ -2,8 +2,10 @@ package config
 
 import (
 	"flag"
-	"fmt"
+	"log"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type App struct {
@@ -17,13 +19,17 @@ func AppParseFlags() *App {
 
 	appConfig.ServerAddr = "localhost:8080"
 	appConfig.BaseURL = "http://localhost:8080"
-	defaultFileName := "short-url-db"
+	defaultFileName := "./tmp/short-url-db.json"
 
-	fileName := defaultFileName
 	flag.StringVar(&appConfig.ServerAddr, "a", appConfig.ServerAddr, "Адрес запуска HTTP-сервера")
 	flag.StringVar(&appConfig.BaseURL, "b", appConfig.BaseURL, "Базовый адрес результирующего сокращённого URL")
-	flag.StringVar(&fileName, "f", defaultFileName, "Базовое имя файла данных без расширения .json")
+	flag.StringVar(&appConfig.FileStoragePath, "f", defaultFileName, "Базовое имя файла данных без расширения .json")
 	flag.Parse()
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Warning: .env file not found or error loading .env file")
+	}
 
 	if envAddr := os.Getenv("SERVER_ADDRESS"); envAddr != "" {
 		appConfig.ServerAddr = envAddr
@@ -33,11 +39,8 @@ func AppParseFlags() *App {
 	}
 
 	if envFileName := os.Getenv("FILE_STORAGE_PATH"); envFileName != "" {
-		fmt.Printf("Используется переменная окружения FILE_STORAGE_PATH=%s\n", envFileName)
-		fileName = envFileName
+		appConfig.FileStoragePath = envFileName
 	}
-
-	appConfig.FileStoragePath = fmt.Sprintf("./../../tmp/%s.json", fileName)
 
 	return &appConfig
 }

@@ -19,6 +19,7 @@ func main() {
 	defer utils.GetLogger().Sync()
 
 	appConfig := config.AppParseFlags()
+	fmt.Printf("main FileStoragePath = %v\n", appConfig.FileStoragePath)
 	storage.Init(appConfig.FileStoragePath)
 
 	r := chi.NewRouter()

@@ -29,7 +29,7 @@ func Init(fileName string) {
 	}
 
 	StoragePath = fileName
-	fmt.Printf("FileStoragePath = %v\n", StoragePath)
+	fmt.Printf("Init FileStoragePath = %v\n", StoragePath)
 
 	err := LoadData(StoragePath)
 	if err != nil {
@@ -42,6 +42,7 @@ func SaveURLsData() error {
 	mu.Lock()
 	defer mu.Unlock()
 
+	fmt.Printf("Init FileStoragePath = %v\n", StoragePath)
 	if err := ensureDir(StoragePath); err != nil {
 		log.Printf("Не удалось создать директорию: %v", err)
 		return err
@@ -52,6 +53,7 @@ func SaveURLsData() error {
 		return err
 	}
 
+	fmt.Printf("Init WriteFile = %v\n", StoragePath)
 	err = os.WriteFile(StoragePath, data, 0644)
 	if err != nil {
 		log.Printf("Ошибка при записи данных URL в файл: %v", err)

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -119,8 +120,10 @@ func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
 	storage.UrlsData = append(storage.UrlsData, urlData)
 	h.mx.Unlock()
 
-	if err := storage.SaveURLsData(); err != nil {
-		http.Error(w, "Failed to save data", http.StatusInternalServerError)
+	if storage.StoragePath != "" {
+		if err := storage.SaveURLsData(); err != nil {
+			log.Fatal(w, "Failed to save data", http.StatusInternalServerError)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
