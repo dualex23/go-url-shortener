@@ -16,19 +16,20 @@ type URLData struct {
 }
 
 var (
-	StoragePath string = "./../../tmp/short-url-db.json"
+	StoragePath string
 	UrlsData    []URLData
 	mu          sync.Mutex
 )
 
-func Init(fileStoragePath string) {
-	fmt.Printf("FileStoragePath = %v\n", fileStoragePath)
-	if fileStoragePath == "" {
+func Init(fileName string) {
+
+	if fileName == "" {
 		log.Println("Функция записи на диск отключена")
 		return
 	}
 
-	StoragePath = fileStoragePath
+	StoragePath = fileName
+	fmt.Printf("FileStoragePath = %v\n", StoragePath)
 
 	err := LoadData(StoragePath)
 	if err != nil {
@@ -62,6 +63,7 @@ func SaveURLsData() error {
 
 func LoadData(dataPath string) error {
 	file, err := os.Open(dataPath)
+	fmt.Printf("LoadData file = %v, путь = %v\n", file, dataPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			log.Println("Файл не найден, инициализация пустого списка URL")
