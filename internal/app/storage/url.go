@@ -64,7 +64,7 @@ func SaveURLsData() error {
 }
 
 func LoadData(dataPath string) error {
-	file, err := os.Open(dataPath)
+	file, err := os.OpenFile(dataPath, os.O_CREATE|os.O_RDWR, 0644)
 	fmt.Printf("LoadData file = %v, путь = %v\n", file, dataPath)
 	if err != nil {
 		if os.IsNotExist(err) {
