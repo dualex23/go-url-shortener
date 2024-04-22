@@ -20,16 +20,24 @@ func main() {
 
 	appConfig := config.AppParseFlags()
 	fmt.Printf("main FileStoragePath = %v\n", appConfig.FileStoragePath)
-	storage.Init(appConfig.FileStoragePath)
+
+	if appConfig.FileStoragePath == "" {
+		log.Fatal("Не указан путь к файлу хранилища")
+	}
+
+	storage := storage.NewStorage(appConfig.FileStoragePath)
+	if storage == nil {
+		log.Fatal("Не удалось создать объект хранилища")
+	}
+
+	sh := handler.NewShortenerHandler(appConfig.BaseURL, storage)
 
 	r := chi.NewRouter()
 
-	shortenerHandler := handler.NewShortenerHandler(appConfig.BaseURL)
-
 	r.Use(middleware.GzipMiddleware, middleware.WithLogging)
-	r.Post("/", shortenerHandler.MainHandler)
-	r.Get("/{id}", shortenerHandler.GetHandler)
-	r.Post("/api/shorten", shortenerHandler.APIHandler)
+	r.Post("/", sh.MainHandler)
+	r.Get("/{id}", sh.GetHandler)
+	r.Post("/api/shorten", sh.APIHandler)
 
 	fmt.Printf("Server is started: %s\n", appConfig.ServerAddr)
 	err := http.ListenAndServe(appConfig.ServerAddr, r)

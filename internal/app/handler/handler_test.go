@@ -5,15 +5,25 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
 
+	"github.com/dualex23/go-url-shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMainHandler(t *testing.T) {
-	handler := NewShortenerHandler("http://localhost:8080")
+	// Используем временный файл для тестирования
+	tempFile, err := os.CreateTemp("", "test-*.json")
+	if err != nil {
+		t.Fatalf("Не удалось создать временный файл: %v", err)
+	}
+	defer os.Remove(tempFile.Name()) // Удаляем после завершения теста
+
+	storage := storage.NewStorage(tempFile.Name())
+	handler := NewShortenerHandler("http://localhost:8080", storage)
 
 	type want struct {
 		status          int
@@ -38,20 +48,16 @@ func TestMainHandler(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(test.method, "/", test.body)
-
 			w := httptest.NewRecorder()
 			handler.MainHandler(w, request)
 
 			res := w.Result()
 			defer res.Body.Close()
 
-			if assert.NotNil(t, res) {
-				assert.Equal(t, test.want.status, res.StatusCode)
-			}
+			assert.Equal(t, test.want.status, res.StatusCode)
 
 			if test.want.responsePattern != nil {
-				resBody, err := io.ReadAll(res.Body)
-				assert.NoError(t, err)
+				resBody, _ := io.ReadAll(res.Body)
 				assert.Regexp(t, test.want.responsePattern, string(resBody))
 			}
 		})
@@ -67,8 +73,12 @@ func TestGetHandler(t *testing.T) {
 		location        string
 	}
 
-	handler := NewShortenerHandler("http://localhost:8080")
-	handler.MapURLs["validID"] = "https://practicum.yandex.ru/"
+	storage := &storage.Storage{
+		UrlsData: []storage.URLData{
+			{ID: "validID", OriginalURL: "https://practicum.yandex.ru/", ShortURL: "http://localhost:8080/validID"},
+		},
+	}
+	handler := NewShortenerHandler("http://localhost:8080", storage)
 
 	tests := []struct {
 		name   string
@@ -121,7 +131,14 @@ func TestGetHandler(t *testing.T) {
 }
 
 func TestApiHandler(t *testing.T) {
-	handler := NewShortenerHandler("http://localhost:8080")
+	tempFile, err := os.CreateTemp("", "test-*.json")
+	if err != nil {
+		t.Fatalf("Не удалось создать временный файл: %v", err)
+	}
+	defer os.Remove(tempFile.Name())
+
+	storage := storage.NewStorage(tempFile.Name())
+	handler := NewShortenerHandler("http://localhost:8080", storage)
 
 	type want struct {
 		status          int
@@ -173,13 +190,10 @@ func TestApiHandler(t *testing.T) {
 			res := w.Result()
 			defer res.Body.Close()
 
-			if assert.NotNil(t, res) {
-				assert.Equal(t, test.want.status, res.StatusCode)
-			}
+			assert.Equal(t, test.want.status, res.StatusCode)
 
 			if test.want.responsePattern != nil {
-				resBody, err := io.ReadAll(res.Body)
-				assert.NoError(t, err)
+				resBody, _ := io.ReadAll(res.Body)
 				assert.Regexp(t, test.want.responsePattern, string(resBody))
 			}
 		})
