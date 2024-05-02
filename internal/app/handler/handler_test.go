@@ -1,56 +1,63 @@
 package handler
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
 
+	"github.com/dualex23/go-url-shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMainHandler(t *testing.T) {
-	handler := NewShortenerHandler("http://localhost:8080")
+	// Используем временный файл для тестирования
+	tempFile, err := os.CreateTemp("", "test-*.json")
+	if err != nil {
+		t.Fatalf("Не удалось создать временный файл: %v", err)
+	}
+	defer os.Remove(tempFile.Name()) // Удаляем после завершения теста
+
+	storage := storage.NewStorage(tempFile.Name())
+	handler := NewShortenerHandler("http://localhost:8080", storage)
 
 	type want struct {
 		status          int
 		responsePattern *regexp.Regexp
 	}
 	tests := []struct {
-		name    string
-		method  string
-		body    io.Reader
-		want    want
+		name   string
+		method string
+		body   io.Reader
+		want   want
 	}{
 		{
 			name:   "positive test",
 			method: http.MethodPost,
 			body:   strings.NewReader("https://practicum.yandex.ru/"),
 			want: want{
-				status: http.StatusCreated,
-        		responsePattern: regexp.MustCompile(`^http://localhost:8080/[a-zA-Z0-9]{8}$`),
+				status:          http.StatusCreated,
+				responsePattern: regexp.MustCompile(`^http://localhost:8080/[a-zA-Z0-9]{8}$`),
 			},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(test.method, "/", test.body)
-
 			w := httptest.NewRecorder()
 			handler.MainHandler(w, request)
 
 			res := w.Result()
 			defer res.Body.Close()
 
-			if assert.NotNil(t, res) {
-				assert.Equal(t, test.want.status, res.StatusCode)
-			}
+			assert.Equal(t, test.want.status, res.StatusCode)
 
 			if test.want.responsePattern != nil {
-				resBody, err := io.ReadAll(res.Body)
-				assert.NoError(t, err)
+				resBody, _ := io.ReadAll(res.Body)
 				assert.Regexp(t, test.want.responsePattern, string(resBody))
 			}
 		})
@@ -66,8 +73,12 @@ func TestGetHandler(t *testing.T) {
 		location        string
 	}
 
-	handler := NewShortenerHandler("http://localhost:8080")
-	handler.MapURLs["validID"] = "https://practicum.yandex.ru/"
+	storage := &storage.Storage{
+		UrlsData: []storage.URLData{
+			{ID: "validID", OriginalURL: "https://practicum.yandex.ru/", ShortURL: "http://localhost:8080/validID"},
+		},
+	}
+	handler := NewShortenerHandler("http://localhost:8080", storage)
 
 	tests := []struct {
 		name   string
@@ -119,3 +130,72 @@ func TestGetHandler(t *testing.T) {
 	}
 }
 
+func TestApiHandler(t *testing.T) {
+	tempFile, err := os.CreateTemp("", "test-*.json")
+	if err != nil {
+		t.Fatalf("Не удалось создать временный файл: %v", err)
+	}
+	defer os.Remove(tempFile.Name())
+
+	storage := storage.NewStorage(tempFile.Name())
+	handler := NewShortenerHandler("http://localhost:8080", storage)
+
+	type want struct {
+		status          int
+		responsePattern *regexp.Regexp
+	}
+	tests := []struct {
+		name   string
+		method string
+		body   io.Reader
+		want   want
+	}{
+		{
+			name:   "positive test",
+			method: http.MethodPost,
+			body:   bytes.NewReader([]byte(`{"url":"https://practicum.yandex.ru/"}`)),
+			want: want{
+				status:          http.StatusCreated,
+				responsePattern: regexp.MustCompile(`{"result":"http://localhost:8080/[a-zA-Z0-9]{8}"}`),
+			},
+		},
+		{
+			name:   "negative test - empty URL",
+			method: http.MethodPost,
+			body:   bytes.NewReader([]byte(`{"url":""}`)),
+			want: want{
+				status:          http.StatusBadRequest,
+				responsePattern: regexp.MustCompile(`URL field is required`),
+			},
+		},
+		{
+			name:   "negative test - wrong method",
+			method: http.MethodGet,
+			body:   nil,
+			want: want{
+				status:          http.StatusMethodNotAllowed,
+				responsePattern: regexp.MustCompile(`Only POST request is allowed!`),
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(test.method, "/api/shorten", test.body)
+			request.Header.Add("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+			handler.APIHandler(w, request)
+
+			res := w.Result()
+			defer res.Body.Close()
+
+			assert.Equal(t, test.want.status, res.StatusCode)
+
+			if test.want.responsePattern != nil {
+				resBody, _ := io.ReadAll(res.Body)
+				assert.Regexp(t, test.want.responsePattern, string(resBody))
+			}
+		})
+	}
+}
