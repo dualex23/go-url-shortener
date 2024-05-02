@@ -12,15 +12,13 @@ import (
 
 	"github.com/dualex23/go-url-shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMainHandler(t *testing.T) {
-	// Используем временный файл для тестирования
 	tempFile, err := os.CreateTemp("", "test-*.json")
-	if err != nil {
-		t.Fatalf("Не удалось создать временный файл: %v", err)
-	}
-	defer os.Remove(tempFile.Name()) // Удаляем после завершения теста
+	require.NoError(t, err, "Не удалось создать временный файл")
+	defer os.Remove(tempFile.Name())
 
 	storage := storage.NewStorage(tempFile.Name())
 	handler := NewShortenerHandler("http://localhost:8080", storage)
@@ -74,8 +72,8 @@ func TestGetHandler(t *testing.T) {
 	}
 
 	storage := &storage.Storage{
-		UrlsData: []storage.URLData{
-			{ID: "validID", OriginalURL: "https://practicum.yandex.ru/", ShortURL: "http://localhost:8080/validID"},
+		UrlsMap: map[string]storage.URLData{
+			"validID": {ID: "validID", OriginalURL: "https://practicum.yandex.ru/", ShortURL: "http://localhost:8080/validID"},
 		},
 	}
 	handler := NewShortenerHandler("http://localhost:8080", storage)
@@ -132,9 +130,7 @@ func TestGetHandler(t *testing.T) {
 
 func TestApiHandler(t *testing.T) {
 	tempFile, err := os.CreateTemp("", "test-*.json")
-	if err != nil {
-		t.Fatalf("Не удалось создать временный файл: %v", err)
-	}
+	require.NoError(t, err, "Не удалось создать временный файл")
 	defer os.Remove(tempFile.Name())
 
 	storage := storage.NewStorage(tempFile.Name())

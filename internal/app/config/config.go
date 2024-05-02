@@ -38,11 +38,11 @@ func AppParseFlags() *App {
 	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
 		appConfig.BaseURL = envBaseURL
 	}
+	currentDir, _ := os.Getwd()
+	appConfig.FileStoragePath = filepath.Join(currentDir, appConfig.FileStoragePath)
+
 	if envFilePath := os.Getenv("FILE_STORAGE_PATH"); envFilePath != "" {
 		appConfig.FileStoragePath = envFilePath
-	} else {
-		currentDir, _ := os.Getwd()
-		appConfig.FileStoragePath = filepath.Join(currentDir, appConfig.FileStoragePath)
 	}
 
 	return &appConfig

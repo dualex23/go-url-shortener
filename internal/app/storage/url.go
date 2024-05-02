@@ -10,7 +10,7 @@ import (
 
 type Storage struct {
 	StoragePath string
-	UrlsData    []URLData
+	UrlsMap     map[string]URLData
 	mu          sync.Mutex
 }
 
@@ -29,7 +29,7 @@ func NewStorage(fileName string) *Storage {
 
 	if err := storage.LoadData(); err != nil {
 		log.Printf("Ошибка при загрузке данных из файла: %v, инициализация пустого списка URL.", err)
-		storage.UrlsData = []URLData{}
+		storage.UrlsMap = make(map[string]URLData)
 		return storage
 	}
 
@@ -47,7 +47,7 @@ func (s *Storage) SaveURLsData() error {
 		return err
 	}
 
-	data, err := json.MarshalIndent(s.UrlsData, "", " ")
+	data, err := json.MarshalIndent(s.UrlsMap, "", " ")
 	if err != nil {
 		log.Printf("Ошибка при сериализации данных URL в JSON: %v", err)
 		return err
@@ -78,12 +78,12 @@ func (s *Storage) LoadData() error {
 
 	if fileInfo.Size() == 0 {
 		log.Println("Файл пуст, инициализация пустого списка URL.")
-		s.UrlsData = []URLData{}
+		s.UrlsMap = make(map[string]URLData)
 		return nil
 	}
 
 	decoder := json.NewDecoder(file)
-	if err = decoder.Decode(&s.UrlsData); err != nil {
+	if err = decoder.Decode(&s.UrlsMap); err != nil {
 		log.Printf("Ошибка при декодировании данных из файла: %v", err)
 		return err
 	}

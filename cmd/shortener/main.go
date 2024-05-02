@@ -9,14 +9,14 @@ import (
 
 	"github.com/dualex23/go-url-shortener/internal/app/config"
 	"github.com/dualex23/go-url-shortener/internal/app/handler"
+	"github.com/dualex23/go-url-shortener/internal/app/logger"
 	"github.com/dualex23/go-url-shortener/internal/app/middleware"
 	"github.com/dualex23/go-url-shortener/internal/app/storage"
-	"github.com/dualex23/go-url-shortener/internal/app/utils"
 )
 
 func main() {
-	utils.InitLogger()
-	defer utils.GetLogger().Sync()
+	logger.New()
+	defer logger.GetLogger().Sync()
 
 	appConfig := config.AppParseFlags()
 	fmt.Printf("main FileStoragePath = %v\n", appConfig.FileStoragePath)

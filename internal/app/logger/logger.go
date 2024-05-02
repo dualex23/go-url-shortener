@@ -1,4 +1,4 @@
-package utils
+package logger
 
 import (
 	"log"
@@ -8,7 +8,7 @@ import (
 
 var Sugar *zap.SugaredLogger
 
-func InitLogger() {
+func New() {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		log.Fatalf("Cannot initialize logger: %v", err)
