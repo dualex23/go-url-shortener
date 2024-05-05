@@ -19,6 +19,15 @@ func main() {
 
 	appConfig := config.AppParseFlags()
 
+	var storageMode string
+	if appConfig.DataBaseDSN != "" {
+		storageMode = "db"
+	} else if appConfig.FileStoragePath != "" {
+		storageMode = "file"
+	} else {
+		storageMode = "memory"
+	}
+
 	if appConfig.FileStoragePath == "" {
 		logger.GetLogger().Fatal("File storage path is not specified")
 	}
@@ -29,7 +38,7 @@ func main() {
 	}
 	defer db.Close()
 
-	storageInstance := storage.NewStorage(appConfig.FileStoragePath, db)
+	storageInstance := storage.NewStorage(appConfig.FileStoragePath, storageMode, db)
 	if storageInstance == nil {
 		logger.GetLogger().Fatal("Failed to create storage object")
 	}
