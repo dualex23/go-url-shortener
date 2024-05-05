@@ -1,7 +1,22 @@
 {
+ "077a6de8": {
+  "uuid": "077a6de8",
+  "short_url": "http://localhost:8080/077a6de8",
+  "original_url": "https://practicum.yandex.ru"
+ },
  "083b38c5": {
   "uuid": "083b38c5",
   "short_url": "http://localhost:8080/083b38c5",
+  "original_url": "https://practicum.yandex.ru"
+ },
+ "a06bd60e": {
+  "uuid": "a06bd60e",
+  "short_url": "http://localhost:8080/a06bd60e",
+  "original_url": "https://practicum.yandex.ru"
+ },
+ "ef746a0c": {
+  "uuid": "ef746a0c",
+  "short_url": "http://localhost:8080/ef746a0c",
   "original_url": "https://practicum.yandex.ru"
  }
 }
