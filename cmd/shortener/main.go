@@ -1,11 +1,10 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 
 	"github.com/dualex23/go-url-shortener/internal/app/config"
 	"github.com/dualex23/go-url-shortener/internal/app/handler"
@@ -19,29 +18,34 @@ func main() {
 	defer logger.GetLogger().Sync()
 
 	appConfig := config.AppParseFlags()
-	fmt.Printf("main FileStoragePath = %v\n", appConfig.FileStoragePath)
+	logger.GetLogger().Info("Starting server", zap.String("path", appConfig.FileStoragePath))
 
 	if appConfig.FileStoragePath == "" {
-		log.Fatal("Не указан путь к файлу хранилища")
+		logger.GetLogger().Fatal("File storage path is not specified")
 	}
 
-	storage := storage.NewStorage(appConfig.FileStoragePath)
-	if storage == nil {
-		log.Fatal("Не удалось создать объект хранилища")
+	storageInstance := storage.NewStorage(appConfig.FileStoragePath)
+	if storageInstance == nil {
+		logger.GetLogger().Fatal("Failed to create storage object")
 	}
 
-	sh := handler.NewShortenerHandler(appConfig.BaseURL, storage)
+	db, err := storage.NewDB(appConfig.DataBaseDSN)
+	if err != nil {
+		logger.GetLogger().Fatal("Failed to connect database", zap.Error(err))
+	}
+	defer db.Close()
+
+	sh := handler.NewShortenerHandler(appConfig.BaseURL, storageInstance)
 
 	r := chi.NewRouter()
-
 	r.Use(middleware.GzipMiddleware, middleware.WithLogging)
 	r.Post("/", sh.MainHandler)
 	r.Get("/{id}", sh.GetHandler)
 	r.Post("/api/shorten", sh.APIHandler)
 
-	fmt.Printf("Server is started: %s\n", appConfig.ServerAddr)
-	err := http.ListenAndServe(appConfig.ServerAddr, r)
-	if err != nil {
-		log.Fatal(err)
+	logger.GetLogger().Info("Server is started", zap.String("address", appConfig.ServerAddr))
+
+	if err := http.ListenAndServe(appConfig.ServerAddr, r); err != nil {
+		logger.GetLogger().Fatal("Server failed to start", zap.Error(err))
 	}
 }
