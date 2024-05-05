@@ -57,7 +57,7 @@ func (s *Storage) Save(originalURL string, baseURL string) (string, string, erro
 
 	switch s.StorageMode {
 	case "db":
-		if err := s.DataBase.SaveUrlDB(urlData.ID, urlData.ShortURL, urlData.OriginalURL); err != nil {
+		if err := s.DataBase.SaveURLDB(urlData.ID, urlData.ShortURL, urlData.OriginalURL); err != nil {
 			return "", "", err
 		}
 	case "file":

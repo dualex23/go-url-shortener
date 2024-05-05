@@ -14,7 +14,7 @@ type DataBase struct {
 type DataBaseInterface interface {
 	Ping() error
 	Close()
-	SaveUrlDB(id, shortURL, originalURL string) error
+	SaveURLDB(id, shortURL, originalURL string) error
 }
 
 func NewDB(dataBaseDSN string) (*DataBase, error) {
@@ -34,7 +34,9 @@ func (db *DataBase) Ping() error {
 	return db.DB.Ping()
 }
 
-func (db *DataBase) SaveUrlDB(id, shortURL, originalURL string) error {
+func (db *DataBase) SaveURLDB(id, shortURL, originalURL string) error {
+	logger.GetLogger().Info("SaveURLDB")
+
 	query := `INSERT INTO urls (uuid, short_url, original_urls) VALUES ($1,$2,$3)`
 	_, err := db.DB.Exec(query, id, shortURL, originalURL)
 	if err != nil {

@@ -27,7 +27,7 @@ func TestMainHandler(t *testing.T) {
 
 	mockDB := mocks.NewMockDataBaseInterface(ctrl)
 	mockDB.EXPECT().Ping().Return(nil).AnyTimes()
-	mockDB.EXPECT().SaveUrlDB(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockDB.EXPECT().SaveURLDB(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	tempFile, err := os.CreateTemp("", "test-*.json")
 	require.NoError(t, err, "Error creating temp file")
@@ -150,7 +150,7 @@ func TestApiHandler(t *testing.T) {
 
 	mockDB := mocks.NewMockDataBaseInterface(ctrl)
 	mockDB.EXPECT().Ping().Return(nil).AnyTimes()
-	mockDB.EXPECT().SaveUrlDB(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockDB.EXPECT().SaveURLDB(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	tempFile, err := os.CreateTemp("", "test-*.json")
 	require.NoError(t, err, "Couldn't create the file")

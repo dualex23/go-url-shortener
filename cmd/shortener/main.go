@@ -28,6 +28,8 @@ func main() {
 		storageMode = "memory"
 	}
 
+	logger.GetLogger().Infof("mode=%s", storageMode)
+
 	if appConfig.FileStoragePath == "" {
 		logger.GetLogger().Fatal("File storage path is not specified")
 	}

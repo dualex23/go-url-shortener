@@ -59,16 +59,16 @@ func (mr *MockDataBaseInterfaceMockRecorder) Ping() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockDataBaseInterface)(nil).Ping))
 }
 
-// SaveUrlDB mocks base method.
-func (m *MockDataBaseInterface) SaveUrlDB(id, shortURL, originalURL string) error {
+// SaveURLDB mocks base method.
+func (m *MockDataBaseInterface) SaveURLDB(id, shortURL, originalURL string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveUrlDB", id, shortURL, originalURL)
+	ret := m.ctrl.Call(m, "SaveURLDB", id, shortURL, originalURL)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SaveUrlDB indicates an expected call of SaveUrlDB.
-func (mr *MockDataBaseInterfaceMockRecorder) SaveUrlDB(id, shortURL, originalURL interface{}) *gomock.Call {
+// SaveURLDB indicates an expected call of SaveURLDB.
+func (mr *MockDataBaseInterfaceMockRecorder) SaveURLDB(id, shortURL, originalURL interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveUrlDB", reflect.TypeOf((*MockDataBaseInterface)(nil).SaveUrlDB), id, shortURL, originalURL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveURLDB", reflect.TypeOf((*MockDataBaseInterface)(nil).SaveURLDB), id, shortURL, originalURL)
 }
