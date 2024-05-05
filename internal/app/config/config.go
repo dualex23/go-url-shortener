@@ -13,6 +13,7 @@ type App struct {
 	BaseURL         string
 	ServerAddr      string
 	FileStoragePath string
+	DataBaseDSN     string
 }
 
 func AppParseFlags() *App {
@@ -25,6 +26,7 @@ func AppParseFlags() *App {
 	flag.StringVar(&appConfig.ServerAddr, "a", appConfig.ServerAddr, "Адрес запуска HTTP-сервера")
 	flag.StringVar(&appConfig.BaseURL, "b", appConfig.BaseURL, "Базовый адрес результирующего сокращённого URL")
 	flag.StringVar(&appConfig.FileStoragePath, "f", defaultFilePath, "Имя файла данных без пути")
+	flag.StringVar(&appConfig.DataBaseDSN, "d", appConfig.DataBaseDSN, "DB настройки")
 	flag.Parse()
 
 	err := godotenv.Load()
@@ -38,6 +40,10 @@ func AppParseFlags() *App {
 	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
 		appConfig.BaseURL = envBaseURL
 	}
+	if envDatabaseDSN := os.Getenv("DATABASE_DSN"); envDatabaseDSN != "" && appConfig.DataBaseDSN == "" {
+		appConfig.DataBaseDSN = envDatabaseDSN
+	}
+
 	currentDir, _ := os.Getwd()
 	appConfig.FileStoragePath = filepath.Join(currentDir, appConfig.FileStoragePath)
 

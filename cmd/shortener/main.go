@@ -18,15 +18,9 @@ func main() {
 	defer logger.GetLogger().Sync()
 
 	appConfig := config.AppParseFlags()
-	logger.GetLogger().Info("Starting server", zap.String("path", appConfig.FileStoragePath))
 
 	if appConfig.FileStoragePath == "" {
 		logger.GetLogger().Fatal("File storage path is not specified")
-	}
-
-	storageInstance := storage.NewStorage(appConfig.FileStoragePath)
-	if storageInstance == nil {
-		logger.GetLogger().Fatal("Failed to create storage object")
 	}
 
 	db, err := storage.NewDB(appConfig.DataBaseDSN)
@@ -35,6 +29,11 @@ func main() {
 	}
 	defer db.Close()
 
+	storageInstance := storage.NewStorage(appConfig.FileStoragePath, db)
+	if storageInstance == nil {
+		logger.GetLogger().Fatal("Failed to create storage object")
+	}
+
 	sh := handler.NewShortenerHandler(appConfig.BaseURL, storageInstance)
 
 	r := chi.NewRouter()
@@ -42,6 +41,7 @@ func main() {
 	r.Post("/", sh.MainHandler)
 	r.Get("/{id}", sh.GetHandler)
 	r.Post("/api/shorten", sh.APIHandler)
+	r.Get("/ping", sh.PingTest)
 
 	logger.GetLogger().Info("Server is started", zap.String("address", appConfig.ServerAddr))
 

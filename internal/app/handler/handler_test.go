@@ -10,17 +10,20 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dualex23/go-url-shortener/internal/app/logger"
 	"github.com/dualex23/go-url-shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestMainHandler(t *testing.T) {
+	logger.New()
+
 	tempFile, err := os.CreateTemp("", "test-*.json")
-	require.NoError(t, err, "Не удалось создать временный файл")
+	require.NoError(t, err, "Error creating temp file")
 	defer os.Remove(tempFile.Name())
 
-	storage := storage.NewStorage(tempFile.Name())
+	storage := storage.NewStorage(tempFile.Name(), nil)
 	handler := NewShortenerHandler("http://localhost:8080", storage)
 
 	type want struct {
@@ -129,11 +132,13 @@ func TestGetHandler(t *testing.T) {
 }
 
 func TestApiHandler(t *testing.T) {
+	logger.New()
+
 	tempFile, err := os.CreateTemp("", "test-*.json")
-	require.NoError(t, err, "Не удалось создать временный файл")
+	require.NoError(t, err, "Couldn't create the file")
 	defer os.Remove(tempFile.Name())
 
-	storage := storage.NewStorage(tempFile.Name())
+	storage := storage.NewStorage(tempFile.Name(), nil)
 	handler := NewShortenerHandler("http://localhost:8080", storage)
 
 	type want struct {
@@ -188,9 +193,11 @@ func TestApiHandler(t *testing.T) {
 
 			assert.Equal(t, test.want.status, res.StatusCode)
 
+			resBody, err := io.ReadAll(res.Body)
+			require.NoError(t, err, "Error reading body")
+
 			if test.want.responsePattern != nil {
-				resBody, _ := io.ReadAll(res.Body)
-				assert.Regexp(t, test.want.responsePattern, string(resBody))
+				assert.Regexp(t, test.want.responsePattern, string(resBody), "Unexpected body")
 			}
 		})
 	}

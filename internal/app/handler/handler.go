@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/dualex23/go-url-shortener/internal/app/logger"
 	"github.com/dualex23/go-url-shortener/internal/app/storage"
 	"github.com/google/uuid"
 )
@@ -134,4 +135,23 @@ func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"result": shortenedURL})
+}
+
+func (h *ShortenerHandler) PingTest(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Only Get request is allowed!", http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := h.Storage.DataBase.Ping()
+	if err != nil {
+		logger.GetLogger().Errorf("Database connection failed: %v", err)
+
+		http.Error(w, "Database connection failed", http.StatusInternalServerError)
+		h.Storage.DataBase.Close()
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Database connection successful"))
 }
