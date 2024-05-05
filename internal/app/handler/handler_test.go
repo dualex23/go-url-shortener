@@ -12,6 +12,9 @@ import (
 
 	"github.com/dualex23/go-url-shortener/internal/app/logger"
 	"github.com/dualex23/go-url-shortener/internal/app/storage"
+	"github.com/dualex23/go-url-shortener/mocks"
+
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,11 +22,18 @@ import (
 func TestMainHandler(t *testing.T) {
 	logger.New()
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDataBaseInterface(ctrl)
+	mockDB.EXPECT().Ping().Return(nil).AnyTimes()
+	mockDB.EXPECT().SaveUrlDB(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
 	tempFile, err := os.CreateTemp("", "test-*.json")
 	require.NoError(t, err, "Error creating temp file")
 	defer os.Remove(tempFile.Name())
 
-	storage := storage.NewStorage(tempFile.Name(), nil)
+	storage := storage.NewStorage(tempFile.Name(), "", mockDB)
 	handler := NewShortenerHandler("http://localhost:8080", storage)
 
 	type want struct {
@@ -59,6 +69,7 @@ func TestMainHandler(t *testing.T) {
 
 			if test.want.responsePattern != nil {
 				resBody, _ := io.ReadAll(res.Body)
+				require.NoError(t, err, "Error reading response body")
 				assert.Regexp(t, test.want.responsePattern, string(resBody))
 			}
 		})
@@ -134,11 +145,18 @@ func TestGetHandler(t *testing.T) {
 func TestApiHandler(t *testing.T) {
 	logger.New()
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDataBaseInterface(ctrl)
+	mockDB.EXPECT().Ping().Return(nil).AnyTimes()
+	mockDB.EXPECT().SaveUrlDB(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
 	tempFile, err := os.CreateTemp("", "test-*.json")
 	require.NoError(t, err, "Couldn't create the file")
 	defer os.Remove(tempFile.Name())
 
-	storage := storage.NewStorage(tempFile.Name(), nil)
+	storage := storage.NewStorage(tempFile.Name(), "", mockDB)
 	handler := NewShortenerHandler("http://localhost:8080", storage)
 
 	type want struct {
@@ -157,7 +175,7 @@ func TestApiHandler(t *testing.T) {
 			body:   bytes.NewReader([]byte(`{"url":"https://practicum.yandex.ru/"}`)),
 			want: want{
 				status:          http.StatusCreated,
-				responsePattern: regexp.MustCompile(`{"result":"http://localhost:8080/[a-zA-Z0-9]{8}"}`),
+				responsePattern: regexp.MustCompile(`{"[a-zA-Z0-9]{8}":"http://localhost:8080/[a-zA-Z0-9]{8}"}`),
 			},
 		},
 		{

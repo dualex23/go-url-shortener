@@ -10,7 +10,6 @@ import (
 
 	"github.com/dualex23/go-url-shortener/internal/app/logger"
 	"github.com/dualex23/go-url-shortener/internal/app/storage"
-	"github.com/google/uuid"
 )
 
 type ShortenerHandler struct {
@@ -27,6 +26,10 @@ func NewShortenerHandler(baseURL string, storage *storage.Storage) *ShortenerHan
 }
 
 func (h *ShortenerHandler) MainHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Only POST request is allowed!", http.StatusMethodNotAllowed)
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -38,26 +41,17 @@ func (h *ShortenerHandler) MainHandler(w http.ResponseWriter, r *http.Request) {
 
 	originalURL := string(body)
 
-	id := uuid.New().String()[:8]
-
-	urlData := storage.URLData{
-		ID:          id,
-		OriginalURL: originalURL,
-		ShortURL:    fmt.Sprintf("%s/%s", h.BaseURL, id),
-	}
-
-	h.mx.Lock()
-	h.Storage.UrlsMap[id] = urlData
-	h.mx.Unlock()
-
-	if err := h.Storage.SaveURLsData(); err != nil {
-		http.Error(w, "Failed to save data", http.StatusInternalServerError)
+	storageSave, id, err := h.Storage.Save(originalURL, h.BaseURL)
+	if err != nil {
+		http.Error(w, "Failed to create short URL", http.StatusInternalServerError)
 		return
 	}
+	fmt.Printf("test %v", storageSave)
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(urlData.ShortURL))
+	w.Write([]byte(fmt.Sprintf("http://localhost:8080/%s", id)))
+
 }
 
 func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
@@ -114,27 +108,15 @@ func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := uuid.New().String()[:8]
-	shortenedURL := fmt.Sprintf("%s/%s", h.BaseURL, id)
-
-	urlData := storage.URLData{
-		ID:          id,
-		OriginalURL: input.URL,
-		ShortURL:    shortenedURL,
-	}
-
-	h.mx.Lock()
-	h.Storage.UrlsMap[id] = urlData
-	h.mx.Unlock()
-
-	if err := h.Storage.SaveURLsData(); err != nil {
-		http.Error(w, "Failed to save data", http.StatusInternalServerError)
+	shortenedURL, id, err := h.Storage.Save(input.URL, h.BaseURL)
+	if err != nil {
+		http.Error(w, "Failed to create or save URL", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"result": shortenedURL})
+	json.NewEncoder(w).Encode(map[string]string{id: shortenedURL})
 }
 
 func (h *ShortenerHandler) PingTest(w http.ResponseWriter, r *http.Request) {
