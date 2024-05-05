@@ -10,19 +10,20 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dualex23/go-url-shortener/internal/app/logger"
 	"github.com/dualex23/go-url-shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMainHandler(t *testing.T) {
-	// Используем временный файл для тестирования
-	tempFile, err := os.CreateTemp("", "test-*.json")
-	if err != nil {
-		t.Fatalf("Не удалось создать временный файл: %v", err)
-	}
-	defer os.Remove(tempFile.Name()) // Удаляем после завершения теста
+	logger.New()
 
-	storage := storage.NewStorage(tempFile.Name())
+	tempFile, err := os.CreateTemp("", "test-*.json")
+	require.NoError(t, err, "Error creating temp file")
+	defer os.Remove(tempFile.Name())
+
+	storage := storage.NewStorage(tempFile.Name(), nil)
 	handler := NewShortenerHandler("http://localhost:8080", storage)
 
 	type want struct {
@@ -74,8 +75,8 @@ func TestGetHandler(t *testing.T) {
 	}
 
 	storage := &storage.Storage{
-		UrlsData: []storage.URLData{
-			{ID: "validID", OriginalURL: "https://practicum.yandex.ru/", ShortURL: "http://localhost:8080/validID"},
+		UrlsMap: map[string]storage.URLData{
+			"validID": {ID: "validID", OriginalURL: "https://practicum.yandex.ru/", ShortURL: "http://localhost:8080/validID"},
 		},
 	}
 	handler := NewShortenerHandler("http://localhost:8080", storage)
@@ -131,13 +132,13 @@ func TestGetHandler(t *testing.T) {
 }
 
 func TestApiHandler(t *testing.T) {
+	logger.New()
+
 	tempFile, err := os.CreateTemp("", "test-*.json")
-	if err != nil {
-		t.Fatalf("Не удалось создать временный файл: %v", err)
-	}
+	require.NoError(t, err, "Couldn't create the file")
 	defer os.Remove(tempFile.Name())
 
-	storage := storage.NewStorage(tempFile.Name())
+	storage := storage.NewStorage(tempFile.Name(), nil)
 	handler := NewShortenerHandler("http://localhost:8080", storage)
 
 	type want struct {
@@ -192,9 +193,11 @@ func TestApiHandler(t *testing.T) {
 
 			assert.Equal(t, test.want.status, res.StatusCode)
 
+			resBody, err := io.ReadAll(res.Body)
+			require.NoError(t, err, "Error reading body")
+
 			if test.want.responsePattern != nil {
-				resBody, _ := io.ReadAll(res.Body)
-				assert.Regexp(t, test.want.responsePattern, string(resBody))
+				assert.Regexp(t, test.want.responsePattern, string(resBody), "Unexpected body")
 			}
 		})
 	}

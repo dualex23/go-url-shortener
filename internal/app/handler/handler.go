@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/dualex23/go-url-shortener/internal/app/logger"
 	"github.com/dualex23/go-url-shortener/internal/app/storage"
 	"github.com/google/uuid"
 )
@@ -26,10 +27,6 @@ func NewShortenerHandler(baseURL string, storage *storage.Storage) *ShortenerHan
 }
 
 func (h *ShortenerHandler) MainHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Only POST request is allowed!", http.StatusMethodNotAllowed)
-		return
-	}
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -49,7 +46,10 @@ func (h *ShortenerHandler) MainHandler(w http.ResponseWriter, r *http.Request) {
 		ShortURL:    fmt.Sprintf("%s/%s", h.BaseURL, id),
 	}
 
-	h.Storage.UrlsData = append(h.Storage.UrlsData, urlData)
+	h.mx.Lock()
+	h.Storage.UrlsMap[id] = urlData
+	h.mx.Unlock()
+
 	if err := h.Storage.SaveURLsData(); err != nil {
 		http.Error(w, "Failed to save data", http.StatusInternalServerError)
 		return
@@ -61,10 +61,6 @@ func (h *ShortenerHandler) MainHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Only GET request is allowed!", http.StatusMethodNotAllowed)
-		return
-	}
 
 	id := strings.TrimPrefix(r.URL.Path, "/")
 
@@ -75,9 +71,9 @@ func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 
 	var originalURL string
 	found := false
-	for _, data := range h.Storage.UrlsData {
-		if data.ID == id {
-			originalURL = data.OriginalURL
+	for _, url := range h.Storage.UrlsMap {
+		if url.ID == id {
+			originalURL = url.OriginalURL
 			found = true
 			break
 		}
@@ -127,7 +123,10 @@ func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
 		ShortURL:    shortenedURL,
 	}
 
-	h.Storage.UrlsData = append(h.Storage.UrlsData, urlData)
+	h.mx.Lock()
+	h.Storage.UrlsMap[id] = urlData
+	h.mx.Unlock()
+
 	if err := h.Storage.SaveURLsData(); err != nil {
 		http.Error(w, "Failed to save data", http.StatusInternalServerError)
 		return
@@ -136,4 +135,23 @@ func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"result": shortenedURL})
+}
+
+func (h *ShortenerHandler) PingTest(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Only Get request is allowed!", http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := h.Storage.DataBase.Ping()
+	if err != nil {
+		logger.GetLogger().Errorf("Database connection failed: %v", err)
+
+		http.Error(w, "Database connection failed", http.StatusInternalServerError)
+		h.Storage.DataBase.Close()
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Database connection successful"))
 }
