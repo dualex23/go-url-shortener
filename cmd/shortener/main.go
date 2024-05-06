@@ -27,6 +27,7 @@ func main() {
 	} else {
 		storageMode = "memory"
 	}
+	storageMode = "file"
 
 	logger.GetLogger().Infof("mode=%s", storageMode)
 

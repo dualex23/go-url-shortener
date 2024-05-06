@@ -86,16 +86,19 @@ func (s *Storage) FindByID(id string) (string, error) {
 	case "db":
 		urlData, err := s.DataBase.LoadUrlByID(id)
 		if err != nil {
+			logger.GetLogger().Errorf("Failed to load URL from database by ID %s: %v", id, err)
 			return "", err
 		}
 		return urlData.OriginalURL, nil
 	case "file", "memory":
 		urlData, ok := s.UrlsMap[id]
 		if !ok {
+			logger.GetLogger().Errorf("No URL found with ID %s", id)
 			return "", fmt.Errorf("no URL found with ID %s", id)
 		}
 		return urlData.OriginalURL, nil
 	default:
+		logger.GetLogger().Errorf("Unknown storage mode")
 		return "", fmt.Errorf("unknown storage mode")
 	}
 }
