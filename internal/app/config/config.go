@@ -38,7 +38,7 @@ func AppParseFlags() *App {
 	}
 
 	fmt.Printf("Current directory: %s\n", currentDir)
-	envPath = filepath.Join(currentDir, ".env")
+	envPath = filepath.Join(currentDir, "../../.env")
 
 	err = godotenv.Load(envPath)
 	if err != nil {
