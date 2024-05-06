@@ -7,6 +7,7 @@ package mocks
 import (
 	reflect "reflect"
 
+	storage "github.com/dualex23/go-url-shortener/internal/app/storage"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -45,6 +46,21 @@ func (mr *MockDataBaseInterfaceMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockDataBaseInterface)(nil).Close))
 }
 
+// LoadUrls mocks base method.
+func (m *MockDataBaseInterface) LoadUrls() (map[string]storage.URLData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadUrls")
+	ret0, _ := ret[0].(map[string]storage.URLData)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LoadUrls indicates an expected call of LoadUrls.
+func (mr *MockDataBaseInterfaceMockRecorder) LoadUrls() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadUrls", reflect.TypeOf((*MockDataBaseInterface)(nil).LoadUrls))
+}
+
 // Ping mocks base method.
 func (m *MockDataBaseInterface) Ping() error {
 	m.ctrl.T.Helper()
@@ -59,16 +75,16 @@ func (mr *MockDataBaseInterfaceMockRecorder) Ping() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockDataBaseInterface)(nil).Ping))
 }
 
-// SaveURLDB mocks base method.
-func (m *MockDataBaseInterface) SaveURLDB(id, shortURL, originalURL string) error {
+// SaveUrls mocks base method.
+func (m *MockDataBaseInterface) SaveUrls(id, shortURL, originalURL string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveURLDB", id, shortURL, originalURL)
+	ret := m.ctrl.Call(m, "SaveUrls", id, shortURL, originalURL)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SaveURLDB indicates an expected call of SaveURLDB.
-func (mr *MockDataBaseInterfaceMockRecorder) SaveURLDB(id, shortURL, originalURL interface{}) *gomock.Call {
+// SaveUrls indicates an expected call of SaveUrls.
+func (mr *MockDataBaseInterfaceMockRecorder) SaveUrls(id, shortURL, originalURL interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveURLDB", reflect.TypeOf((*MockDataBaseInterface)(nil).SaveURLDB), id, shortURL, originalURL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveUrls", reflect.TypeOf((*MockDataBaseInterface)(nil).SaveUrls), id, shortURL, originalURL)
 }

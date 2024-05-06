@@ -1,7 +1,9 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
+	"time"
 
 	"github.com/dualex23/go-url-shortener/internal/app/logger"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -14,7 +16,8 @@ type DataBase struct {
 type DataBaseInterface interface {
 	Ping() error
 	Close()
-	SaveURLDB(id, shortURL, originalURL string) error
+	SaveUrls(id, shortURL, originalURL string) error
+	LoadUrls() (map[string]URLData, error)
 }
 
 func NewDB(dataBaseDSN string) (*DataBase, error) {
@@ -34,14 +37,47 @@ func (db *DataBase) Ping() error {
 	return db.DB.Ping()
 }
 
-func (db *DataBase) SaveURLDB(id, shortURL, originalURL string) error {
-	logger.GetLogger().Info("SaveURLDB")
+func (db *DataBase) SaveUrls(id, shortURL, originalURL string) error {
+	logger.GetLogger().Info("SaveUrls to DB")
 
-	query := `INSERT INTO urls (uuid, short_url, original_urls) VALUES ($1,$2,$3)`
+	query := `INSERT INTO urls (uuid, short_url, original_url) VALUES ($1,$2,$3)`
 	_, err := db.DB.Exec(query, id, shortURL, originalURL)
 	if err != nil {
 		logger.GetLogger().Errorf("Failed to insert URL: %v", err)
 		return err
 	}
 	return nil
+}
+
+func (db *DataBase) LoadUrls() (map[string]URLData, error) {
+	logger.GetLogger().Info("LoadUrls from DB")
+
+	urls := make(map[string]URLData)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `SELECT uuid, short_url, original_url FROM urls`
+	rows, err := db.DB.QueryContext(ctx, query)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to execute query: %v", err)
+
+		return nil, err
+	}
+
+	for rows.Next() {
+		var u URLData
+		if err := rows.Scan(&u.ID, &u.ShortURL, &u.OriginalURL); err != nil {
+			logger.GetLogger().Errorf("Failed to scan row: %v", err)
+			return nil, err
+		}
+		urls[u.ID] = u
+	}
+
+	if err := rows.Err(); err != nil {
+		logger.GetLogger().Errorf("Rows iteration error: %v", err)
+		return nil, err
+	}
+
+	return urls, nil
 }

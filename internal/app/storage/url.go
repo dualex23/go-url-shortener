@@ -8,7 +8,7 @@ import (
 	"github.com/dualex23/go-url-shortener/internal/app/logger"
 )
 
-func (s *Storage) SaveURLsFile() error {
+func (s *Storage) SaveUrlToFile() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -34,7 +34,7 @@ func (s *Storage) SaveURLsFile() error {
 	return nil
 }
 
-func (s *Storage) LoadData() error {
+func (s *Storage) LoadUrlFromFile() error {
 	file, err := os.OpenFile(s.StoragePath, os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
 		logger.GetLogger().Errorf("Error opening file: %v\n", err)
