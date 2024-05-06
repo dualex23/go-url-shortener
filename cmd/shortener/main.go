@@ -27,23 +27,22 @@ func main() {
 	} else {
 		storageMode = "memory"
 	}
-	storageMode = "file"
 
 	logger.GetLogger().Infof("mode=%s", storageMode)
 
 	if appConfig.FileStoragePath == "" {
-		logger.GetLogger().Fatal("File storage path is not specified")
+		logger.GetLogger().Fatal("File storage path is not specified\n")
 	}
 
 	db, err := storage.NewDB(appConfig.DataBaseDSN)
 	if err != nil {
-		logger.GetLogger().Fatal("Failed to connect database", zap.Error(err))
+		logger.GetLogger().Fatal("Failed to connect database\n", zap.Error(err))
 	}
 	defer db.Close()
 
 	storageInstance := storage.NewStorage(appConfig.FileStoragePath, storageMode, db)
 	if storageInstance == nil {
-		logger.GetLogger().Fatal("Failed to create storage object")
+		logger.GetLogger().Fatal("Failed to create storage object\n")
 	}
 
 	sh := handler.NewShortenerHandler(appConfig.BaseURL, storageInstance)
@@ -55,7 +54,7 @@ func main() {
 	r.Post("/api/shorten", sh.APIHandler)
 	r.Get("/ping", sh.PingTest)
 
-	logger.GetLogger().Info("Server is started", zap.String("address", appConfig.ServerAddr))
+	logger.GetLogger().Info("Server is started\n", zap.String("address", appConfig.ServerAddr))
 
 	if err := http.ListenAndServe(appConfig.ServerAddr, r); err != nil {
 		logger.GetLogger().Fatal("Server failed to start", zap.Error(err))

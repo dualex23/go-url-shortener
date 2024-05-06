@@ -41,7 +41,7 @@ func (s *Storage) Load() error {
 			return nil
 		}
 
-		return s.LoadUrlFromFile()
+		return s.LoadURLFromFile()
 	default:
 		logger.GetLogger().Info("Load: Using in-memory storage, no initial data loading required.\n")
 	}
@@ -69,7 +69,7 @@ func (s *Storage) Save(originalURL string, baseURL string) (string, string, erro
 		s.UrlsMap[id] = urlData
 		s.mu.Unlock()
 
-		if err := s.SaveUrlToFile(); err != nil {
+		if err := s.SaveURLToFile(); err != nil {
 			return "", "", err
 		}
 	default:
@@ -84,7 +84,7 @@ func (s *Storage) Save(originalURL string, baseURL string) (string, string, erro
 func (s *Storage) FindByID(id string) (string, error) {
 	switch s.StorageMode {
 	case "db":
-		urlData, err := s.DataBase.LoadUrlByID(id)
+		urlData, err := s.DataBase.LoadURLByID(id)
 		if err != nil {
 			logger.GetLogger().Errorf("Failed to load URL from database by ID %s: %v", id, err)
 			return "", err

@@ -19,7 +19,7 @@ type DataBaseInterface interface {
 	Close()
 	SaveUrls(id, shortURL, originalURL string) error
 	LoadUrls() (map[string]URLData, error)
-	LoadUrlByID(id string) (*URLData, error)
+	LoadURLByID(id string) (*URLData, error)
 }
 
 func NewDB(dataBaseDSN string) (*DataBase, error) {
@@ -84,7 +84,7 @@ func (db *DataBase) LoadUrls() (map[string]URLData, error) {
 	return urls, nil
 }
 
-func (db *DataBase) LoadUrlByID(id string) (*URLData, error) {
+func (db *DataBase) LoadURLByID(id string) (*URLData, error) {
 	logger.GetLogger().Info("Load url by id")
 	var u URLData
 

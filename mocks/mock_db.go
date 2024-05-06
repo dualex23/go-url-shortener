@@ -46,19 +46,19 @@ func (mr *MockDataBaseInterfaceMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockDataBaseInterface)(nil).Close))
 }
 
-// LoadUrlByID mocks base method.
-func (m *MockDataBaseInterface) LoadUrlByID(id string) (*storage.URLData, error) {
+// LoadURLByID mocks base method.
+func (m *MockDataBaseInterface) LoadURLByID(id string) (*storage.URLData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadUrlByID", id)
+	ret := m.ctrl.Call(m, "LoadURLByID", id)
 	ret0, _ := ret[0].(*storage.URLData)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// LoadUrlByID indicates an expected call of LoadUrlByID.
-func (mr *MockDataBaseInterfaceMockRecorder) LoadUrlByID(id interface{}) *gomock.Call {
+// LoadURLByID indicates an expected call of LoadURLByID.
+func (mr *MockDataBaseInterfaceMockRecorder) LoadURLByID(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadUrlByID", reflect.TypeOf((*MockDataBaseInterface)(nil).LoadUrlByID), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadURLByID", reflect.TypeOf((*MockDataBaseInterface)(nil).LoadURLByID), id)
 }
 
 // LoadUrls mocks base method.
