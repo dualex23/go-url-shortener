@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dualex23/go-url-shortener/internal/app/config"
 	"github.com/dualex23/go-url-shortener/internal/app/logger"
 	"github.com/dualex23/go-url-shortener/internal/app/storage"
 	"github.com/dualex23/go-url-shortener/mocks"
@@ -21,22 +22,21 @@ import (
 )
 
 func getServerAddress() string {
-	addr := os.Getenv("SERVER_ADDRESS")
-	if addr == "" {
-		addr = "localhost:8080"
-	}
-	return addr
+	cfg := config.AppParseFlags()
+	return cfg.ServerAddr
 }
+
+var baseURL string
 
 func TestMain(m *testing.M) {
 	logger.New()
+	serverAddr := getServerAddress()               // localhost:8080
+	baseURL = fmt.Sprintf("http://%s", serverAddr) // http://localhost:8080
+
 	os.Exit(m.Run())
 }
 
 func TestMainHandler(t *testing.T) {
-	serverAddr := getServerAddress()
-	baseURL := fmt.Sprintf("http://%s", serverAddr)
-
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -92,9 +92,6 @@ func TestMainHandler(t *testing.T) {
 }
 
 func TestGetHandler(t *testing.T) {
-	serverAddr := getServerAddress()
-	baseURL := fmt.Sprintf("http://%s", serverAddr)
-
 	type want struct {
 		status          int
 		response        *string
@@ -162,9 +159,6 @@ func TestGetHandler(t *testing.T) {
 }
 
 func TestApiHandler(t *testing.T) {
-	serverAddr := getServerAddress()
-	baseURL := fmt.Sprintf("http://%s", serverAddr)
-
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 

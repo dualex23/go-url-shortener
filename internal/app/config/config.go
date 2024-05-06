@@ -2,10 +2,10 @@ package config
 
 import (
 	"flag"
-	"log"
 	"os"
 	"path/filepath"
 
+	"github.com/dualex23/go-url-shortener/internal/app/logger"
 	"github.com/joho/godotenv"
 )
 
@@ -31,13 +31,15 @@ func AppParseFlags() *App {
 
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("Warning: .env file not found or error loading .env file")
+		logger.GetLogger().Error("Warning: .env file not found or error loading .env file")
 	}
 
 	if envAddr := os.Getenv("SERVER_ADDRESS"); envAddr != "" {
+		logger.GetLogger().Infof("env SERVER_ADDRESS = %s", envAddr)
 		appConfig.ServerAddr = envAddr
 	}
 	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
+		logger.GetLogger().Infof("env BASE_URL = %s", envBaseURL)
 		appConfig.BaseURL = envBaseURL
 	}
 	if envDatabaseDSN := os.Getenv("DATABASE_DSN"); envDatabaseDSN != "" && appConfig.DataBaseDSN == "" {
