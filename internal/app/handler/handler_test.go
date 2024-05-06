@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -19,8 +20,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMainHandler(t *testing.T) {
+func getServerAddress() string {
+	addr := os.Getenv("SERVER_ADDRESS")
+	if addr == "" {
+		addr = "localhost:8080"
+	}
+	return addr
+}
+
+func TestMain(m *testing.M) {
 	logger.New()
+	os.Exit(m.Run())
+}
+
+func TestMainHandler(t *testing.T) {
+	serverAddr := getServerAddress()
+	baseURL := fmt.Sprintf("http://%s", serverAddr)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -34,7 +49,7 @@ func TestMainHandler(t *testing.T) {
 	defer os.Remove(tempFile.Name())
 
 	storage := storage.NewStorage(tempFile.Name(), "", mockDB)
-	handler := NewShortenerHandler("http://localhost:8080", storage)
+	handler := NewShortenerHandler(baseURL, storage)
 
 	type want struct {
 		status          int
@@ -52,7 +67,7 @@ func TestMainHandler(t *testing.T) {
 			body:   strings.NewReader("https://practicum.yandex.ru/"),
 			want: want{
 				status:          http.StatusCreated,
-				responsePattern: regexp.MustCompile(`^http://localhost:8080/[a-zA-Z0-9]{8}$`),
+				responsePattern: regexp.MustCompile(fmt.Sprintf(`^%s/[a-zA-Z0-9]{8}$`, baseURL)),
 			},
 		},
 	}
@@ -77,6 +92,9 @@ func TestMainHandler(t *testing.T) {
 }
 
 func TestGetHandler(t *testing.T) {
+	serverAddr := getServerAddress()
+	baseURL := fmt.Sprintf("http://%s", serverAddr)
+
 	type want struct {
 		status          int
 		response        *string
@@ -87,11 +105,11 @@ func TestGetHandler(t *testing.T) {
 
 	storage := &storage.Storage{
 		UrlsMap: map[string]storage.URLData{
-			"validID": {ID: "validID", OriginalURL: "https://practicum.yandex.ru/", ShortURL: "http://localhost:8080/validID"},
+			"validID": {ID: "validID", OriginalURL: "https://practicum.yandex.ru/", ShortURL: baseURL + "/validID"},
 		},
 		StorageMode: "memory",
 	}
-	handler := NewShortenerHandler("http://localhost:8080", storage)
+	handler := NewShortenerHandler(baseURL, storage)
 
 	tests := []struct {
 		name   string
@@ -144,7 +162,8 @@ func TestGetHandler(t *testing.T) {
 }
 
 func TestApiHandler(t *testing.T) {
-	logger.New()
+	serverAddr := getServerAddress()
+	baseURL := fmt.Sprintf("http://%s", serverAddr)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -158,7 +177,7 @@ func TestApiHandler(t *testing.T) {
 	defer os.Remove(tempFile.Name())
 
 	storage := storage.NewStorage(tempFile.Name(), "", mockDB)
-	handler := NewShortenerHandler("http://localhost:8080", storage)
+	handler := NewShortenerHandler(baseURL, storage)
 
 	type want struct {
 		status          int
@@ -176,7 +195,7 @@ func TestApiHandler(t *testing.T) {
 			body:   bytes.NewReader([]byte(`{"url":"https://practicum.yandex.ru/"}`)),
 			want: want{
 				status:          http.StatusCreated,
-				responsePattern: regexp.MustCompile(`{"[a-zA-Z0-9]{8}":"http://localhost:8080/[a-zA-Z0-9]{8}"}`),
+				responsePattern: regexp.MustCompile(`{"[a-zA-Z0-9]{8}":"` + regexp.QuoteMeta(baseURL) + `/[a-zA-Z0-9]{8}"}`),
 			},
 		},
 		{

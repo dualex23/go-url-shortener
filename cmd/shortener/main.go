@@ -28,7 +28,7 @@ func main() {
 		storageMode = "memory"
 	}
 
-	logger.GetLogger().Infof("mode=%s", storageMode)
+	logger.GetLogger().Infof("mode=%s\n", storageMode)
 
 	if appConfig.FileStoragePath == "" {
 		logger.GetLogger().Fatal("File storage path is not specified\n")
@@ -57,6 +57,6 @@ func main() {
 	logger.GetLogger().Info("Server is started\n", zap.String("address", appConfig.ServerAddr))
 
 	if err := http.ListenAndServe(appConfig.ServerAddr, r); err != nil {
-		logger.GetLogger().Fatal("Server failed to start", zap.Error(err))
+		logger.GetLogger().Fatal("Server failed to start\n", zap.Error(err))
 	}
 }
