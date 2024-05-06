@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -18,9 +19,10 @@ type App struct {
 
 func AppParseFlags() *App {
 	var appConfig App
+	var envPath string
 
 	appConfig.ServerAddr = "localhost:8080"
-	appConfig.BaseURL = "http://localhost:8080"
+	appConfig.BaseURL = fmt.Sprintf("http://%s", appConfig.ServerAddr)
 	defaultFilePath := "/tmp/short-url-db.json"
 
 	flag.StringVar(&appConfig.ServerAddr, "a", appConfig.ServerAddr, "Адрес запуска HTTP-сервера")
@@ -29,9 +31,20 @@ func AppParseFlags() *App {
 	flag.StringVar(&appConfig.DataBaseDSN, "d", appConfig.DataBaseDSN, "DB настройки")
 	flag.Parse()
 
-	err := godotenv.Load()
+	currentDir, err := os.Getwd()
 	if err != nil {
-		logger.GetLogger().Errorf("Warning: .env file not found or error loading .env file = %s", err)
+		logger.GetLogger().Errorf("Failed to get current working directory: %s", err)
+		return nil
+	}
+
+	fmt.Printf("Current directory: %s\n", currentDir)
+	envPath = filepath.Join(currentDir, ".env")
+
+	err = godotenv.Load(envPath)
+	if err != nil {
+		logger.GetLogger().Errorf("Warning: .env file not found or error loading .env file from %s: %s", envPath, err)
+	} else {
+		logger.GetLogger().Infof(".env file loaded successfully from %s", envPath)
 	}
 
 	if envAddr := os.Getenv("SERVER_ADDRESS"); envAddr != "" {
@@ -47,7 +60,6 @@ func AppParseFlags() *App {
 		appConfig.DataBaseDSN = envDatabaseDSN
 	}
 
-	currentDir, _ := os.Getwd()
 	appConfig.FileStoragePath = filepath.Join(currentDir, appConfig.FileStoragePath)
 
 	if envFilePath := os.Getenv("FILE_STORAGE_PATH"); envFilePath != "" {
