@@ -89,6 +89,7 @@ func TestGetHandler(t *testing.T) {
 		UrlsMap: map[string]storage.URLData{
 			"validID": {ID: "validID", OriginalURL: "https://practicum.yandex.ru/", ShortURL: "http://localhost:8080/validID"},
 		},
+		StorageMode: "memory",
 	}
 	handler := NewShortenerHandler("http://localhost:8080", storage)
 

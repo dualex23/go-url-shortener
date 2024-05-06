@@ -58,32 +58,23 @@ func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 
 	id := strings.TrimPrefix(r.URL.Path, "/")
 
+	logger.GetLogger().Infof("id=%s\n", id)
+
 	if id == "" {
 		http.Error(w, "Missing ID", http.StatusBadRequest)
 		return
 	}
 
-	var originalURL string
-	found := false
-	for _, url := range h.Storage.UrlsMap {
-		if url.ID == id {
-			originalURL = url.OriginalURL
-			found = true
-			break
-		}
-	}
+	originalURL, err := h.Storage.FindByID(id)
+	if err != nil {
+		logger.GetLogger().Errorf("Error finding URL: %v\n", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 
-	if !found {
-		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
 
-	if strings.HasPrefix(r.URL.Path, "/") && len(r.URL.Path) > 1 {
-		w.Header().Set("Location", originalURL)
-		w.WriteHeader(http.StatusTemporaryRedirect)
-	} else {
-		w.WriteHeader(http.StatusBadRequest)
-	}
+	w.Header().Set("Location", originalURL)
+	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {

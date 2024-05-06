@@ -8,7 +8,7 @@ import (
 )
 
 func NewStorage(fileName string, mode string, db DataBaseInterface) *Storage {
-	logger.GetLogger().Info("NewStorage")
+	logger.GetLogger().Info("NewStorage\n")
 
 	storage := &Storage{
 		StorageMode: mode,
@@ -18,36 +18,35 @@ func NewStorage(fileName string, mode string, db DataBaseInterface) *Storage {
 	}
 
 	if err := storage.Load(); err != nil {
-		logger.GetLogger().Errorf("Error loading storage: %v", err)
+		logger.GetLogger().Errorf("Error loading storage: %v\n", err)
 	}
 
 	return storage
 }
 
 func (s *Storage) Load() error {
-	logger.GetLogger().Info("Load")
+	logger.GetLogger().Info("Load\n")
 
 	switch s.StorageMode {
 	case "db":
 		urls, err := s.DataBase.LoadUrls()
 		if err != nil {
-			logger.GetLogger().Errorf("Failed to load URLs from database: %v", err)
+			logger.GetLogger().Errorf("Failed to load URLs from database: %v\n", err)
 			return err
 		}
 		s.UrlsMap = urls
-	case "file":
+	case "file", "memory":
 		if s.StoragePath == "" {
-			logger.GetLogger().Error("No file path specified for file-based storage.")
+			logger.GetLogger().Error("No file path specified for file-based storage.\n")
 			return nil
 		}
 
 		return s.LoadUrlFromFile()
 	default:
-		logger.GetLogger().Info("Using in-memory storage, no initial data loading required.")
+		logger.GetLogger().Info("Load: Using in-memory storage, no initial data loading required.\n")
 	}
 
 	return nil
-
 }
 
 func (s *Storage) Save(originalURL string, baseURL string) (string, string, error) {
@@ -80,4 +79,23 @@ func (s *Storage) Save(originalURL string, baseURL string) (string, string, erro
 	}
 
 	return shortURL, id, nil
+}
+
+func (s *Storage) FindByID(id string) (string, error) {
+	switch s.StorageMode {
+	case "db":
+		urlData, err := s.DataBase.LoadUrlByID(id)
+		if err != nil {
+			return "", err
+		}
+		return urlData.OriginalURL, nil
+	case "file", "memory":
+		urlData, ok := s.UrlsMap[id]
+		if !ok {
+			return "", fmt.Errorf("no URL found with ID %s", id)
+		}
+		return urlData.OriginalURL, nil
+	default:
+		return "", fmt.Errorf("unknown storage mode")
+	}
 }

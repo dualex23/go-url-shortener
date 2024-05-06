@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/dualex23/go-url-shortener/internal/app/logger"
@@ -18,6 +19,7 @@ type DataBaseInterface interface {
 	Close()
 	SaveUrls(id, shortURL, originalURL string) error
 	LoadUrls() (map[string]URLData, error)
+	LoadUrlByID(id string) (*URLData, error)
 }
 
 func NewDB(dataBaseDSN string) (*DataBase, error) {
@@ -60,7 +62,7 @@ func (db *DataBase) LoadUrls() (map[string]URLData, error) {
 	query := `SELECT uuid, short_url, original_url FROM urls`
 	rows, err := db.DB.QueryContext(ctx, query)
 	if err != nil {
-		logger.GetLogger().Errorf("Failed to execute query: %v", err)
+		logger.GetLogger().Errorf("Failed to execute query in LoadUrls: %v", err)
 
 		return nil, err
 	}
@@ -80,4 +82,25 @@ func (db *DataBase) LoadUrls() (map[string]URLData, error) {
 	}
 
 	return urls, nil
+}
+
+func (db *DataBase) LoadUrlByID(id string) (*URLData, error) {
+	logger.GetLogger().Info("Load url by id")
+	var u URLData
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `SELECT uuid, short_url, original_url FROM urls WHERE uuid = $1`
+	row := db.DB.QueryRowContext(ctx, query, id)
+
+	if err := row.Scan(&u.ID, &u.ShortURL, &u.OriginalURL); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("no URL found with ID %s", id)
+		}
+		logger.GetLogger().Errorf("Failed to execute query in LoadUrlByID: %s", err)
+		return nil, err
+	}
+
+	return &u, nil
 }
