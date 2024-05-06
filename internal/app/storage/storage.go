@@ -8,7 +8,7 @@ import (
 )
 
 func NewStorage(fileName string, mode string, db DataBaseInterface) *Storage {
-	logger.GetLogger().Info("NewStorage\n")
+	//logger.GetLogger().Info("NewStorage\n")
 
 	storage := &Storage{
 		StorageMode: mode,
@@ -25,7 +25,7 @@ func NewStorage(fileName string, mode string, db DataBaseInterface) *Storage {
 }
 
 func (s *Storage) Load() error {
-	logger.GetLogger().Info("Load\n")
+	//logger.GetLogger().Info("Load\n")
 
 	switch s.StorageMode {
 	case "db":
@@ -50,6 +50,8 @@ func (s *Storage) Load() error {
 }
 
 func (s *Storage) Save(originalURL string, baseURL string) (string, string, error) {
+	//logger.GetLogger().Info("Save\n")
+
 	id := uuid.New().String()[:8]
 	shortURL := fmt.Sprintf("%s/%s", baseURL, id)
 
@@ -82,6 +84,8 @@ func (s *Storage) Save(originalURL string, baseURL string) (string, string, erro
 }
 
 func (s *Storage) FindByID(id string) (string, error) {
+	logger.GetLogger().Infof("FindByID - %s", id)
+
 	switch s.StorageMode {
 	case "db":
 		urlData, err := s.DataBase.LoadURLByID(id)
@@ -91,11 +95,20 @@ func (s *Storage) FindByID(id string) (string, error) {
 		}
 		return urlData.OriginalURL, nil
 	case "file", "memory":
+		logger.GetLogger().Info("case file n memory")
+
+		s.mu.Lock()
 		urlData, ok := s.UrlsMap[id]
+		s.mu.Unlock()
+
 		if !ok {
 			logger.GetLogger().Errorf("No URL found with ID %s", id)
 			return "", fmt.Errorf("no URL found with ID %s", id)
 		}
+		logger.GetLogger().Infoln(
+			"id", id,
+			"urlData:", urlData,
+		)
 		return urlData.OriginalURL, nil
 	default:
 		logger.GetLogger().Errorf("Unknown storage mode")

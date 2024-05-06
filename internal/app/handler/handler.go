@@ -58,8 +58,6 @@ func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 
 	id := strings.TrimPrefix(r.URL.Path, "/")
 
-	logger.GetLogger().Infof("id=%s\n", id)
-
 	if id == "" {
 		http.Error(w, "Missing ID", http.StatusBadRequest)
 		return
@@ -73,11 +71,17 @@ func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger.GetLogger().Infoln(
+		"handler:", "GetHandler",
+		"originalURL:", originalURL,
+	)
+
 	w.Header().Set("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST request is allowed!", http.StatusMethodNotAllowed)
 		return
@@ -94,6 +98,12 @@ func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger.GetLogger().Infoln(
+		"handler", "APIHandler",
+		"method", r.Method,
+		"url", input.URL,
+	)
+
 	if input.URL == "" {
 		http.Error(w, "URL field is required", http.StatusBadRequest)
 		return
@@ -107,6 +117,10 @@ func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+
+	logger.GetLogger().Infoln(
+		"response:", fmt.Sprintf("%s:%s", id, shortenedURL),
+	)
 	json.NewEncoder(w).Encode(map[string]string{id: shortenedURL})
 }
 

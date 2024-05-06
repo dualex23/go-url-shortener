@@ -1,27 +1,3 @@
 {
- "077a6de8": {
-  "uuid": "077a6de8",
-  "short_url": "http://localhost:8080/077a6de8",
-  "original_url": "https://practicum.yandex.ru"
- },
- "394c08bf": {
-  "uuid": "394c08bf",
-  "short_url": "http://localhost:8088/394c08bf",
-  "original_url": "https://mail.ru"
- },
- "5249db9e": {
-  "uuid": "5249db9e",
-  "short_url": "http://localhost:8080/5249db9e",
-  "original_url": "http://j7zk55xx.yandex/w2b49ijmqim"
- },
- "851f7f5d": {
-  "uuid": "851f7f5d",
-  "short_url": "http://localhost:8181/851f7f5d",
-  "original_url": "https://mock.ru"
- },
- "9f451493": {
-  "uuid": "9f451493",
-  "short_url": "http://localhost:8080/9f451493",
-  "original_url": "https://ya.ru"
- }
+
 }

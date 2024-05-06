@@ -31,7 +31,7 @@ func AppParseFlags() *App {
 
 	err := godotenv.Load()
 	if err != nil {
-		logger.GetLogger().Error("Warning: .env file not found or error loading .env file")
+		logger.GetLogger().Errorf("Warning: .env file not found or error loading .env file = %s", err)
 	}
 
 	if envAddr := os.Getenv("SERVER_ADDRESS"); envAddr != "" {
