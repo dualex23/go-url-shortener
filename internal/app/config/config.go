@@ -30,7 +30,7 @@ func AppParseFlags() *App {
 	flag.StringVar(&appConfig.DataBaseDSN, "d", appConfig.DataBaseDSN, "DB настройки")
 	flag.Parse()
 
-	err := godotenv.Load()
+	err := godotenv.Load(".env")
 	if err != nil {
 		logger.GetLogger().Errorf("Warning: .env file not found or error loading .env file from: %s", err)
 	}

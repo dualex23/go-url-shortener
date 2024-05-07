@@ -22,14 +22,39 @@ type DataBaseInterface interface {
 	LoadURLByID(id string) (*URLData, error)
 }
 
-func NewDB(dataBaseDSN string) (*DataBase, error) {
+func (db *DataBase) CreateTable() error {
+	logger.GetLogger().Info("Creating table if it doesn't exist")
 
+	query := `
+	CREATE TABLE IF NOT EXISTS urls (
+		uuid VARCHAR(255) PRIMARY KEY,
+		short_url TEXT NOT NULL,
+		original_url TEXT NOT NULL
+	);
+	`
+
+	_, err := db.DB.Exec(query)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to create table 'urls': %v", err)
+		return err
+	}
+	logger.GetLogger().Info("Table 'urls' ensured to exist")
+	return nil
+}
+
+func NewDB(dataBaseDSN string) (*DataBase, error) {
 	db, err := sql.Open("pgx", dataBaseDSN)
 	if err != nil {
 		logger.GetLogger().Fatalf("Unable to connect to database: %v", err)
 	}
 
-	return &DataBase{DB: db}, nil
+	dataBase := &DataBase{DB: db}
+
+	if err := dataBase.CreateTable(); err != nil {
+		return nil, err
+	}
+
+	return dataBase, nil
 }
 
 func (db *DataBase) Close() {
