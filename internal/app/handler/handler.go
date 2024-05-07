@@ -153,3 +153,26 @@ func (h *ShortenerHandler) PingTest(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Database connection successful"))
 }
+
+func (h *ShortenerHandler) APIBatchHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Only POST request is allowed!", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var batch struct {
+		Correlation_id string `json:"correlation_id"`
+		Original_url   string `json:"original_url"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&batch)
+	defer r.Body.Close()
+
+	if err != nil {
+		http.Error(w, "APIBatchHandler: Error reading JSON", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("batch:%s-%s", batch.Correlation_id, batch.Original_url)
+
+}

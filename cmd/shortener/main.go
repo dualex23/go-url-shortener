@@ -56,6 +56,7 @@ func main() {
 	r.Get("/{id}", sh.GetHandler)
 	r.Post("/api/shorten", sh.APIHandler)
 	r.Get("/ping", sh.PingTest)
+	r.Post("/api/shorten/batch", sh.APIBatchHandler)
 
 	logger.GetLogger().Infof("Configured to listen on %s with base URL %s", appConfig.ServerAddr, appConfig.BaseURL)
 
