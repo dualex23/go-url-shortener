@@ -39,6 +39,7 @@ func (db *DataBase) CreateTable() error {
 		return err
 	}
 	logger.GetLogger().Info("Table 'urls' ensured to exist")
+
 	return nil
 }
 
