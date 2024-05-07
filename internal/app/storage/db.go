@@ -21,27 +21,7 @@ type DataBaseInterface interface {
 	LoadUrls() (map[string]URLData, error)
 	LoadURLByID(id string) (*URLData, error)
 	BatchSaveUrls(urls []URLData) error
-}
-
-func (db *DataBase) CreateTable() error {
-	logger.GetLogger().Info("Creating table if it doesn't exist")
-
-	query := `
-	CREATE TABLE IF NOT EXISTS urls (
-		uuid VARCHAR(255) PRIMARY KEY,
-		short_url TEXT NOT NULL,
-		original_url TEXT NOT NULL
-	);
-	`
-
-	_, err := db.DB.Exec(query)
-	if err != nil {
-		logger.GetLogger().Errorf("Failed to create table 'urls': %v", err)
-		return err
-	}
-	logger.GetLogger().Info("Table 'urls' ensured to exist")
-
-	return nil
+	FindByOriginalURL(originalURL string) (string, string, error)
 }
 
 func NewDB(dataBaseDSN string) (*DataBase, error) {
@@ -59,9 +39,50 @@ func NewDB(dataBaseDSN string) (*DataBase, error) {
 	return dataBase, nil
 }
 
+func (db *DataBase) CreateTable() error {
+	logger.GetLogger().Info("Starting table and index creation transaction")
+
+	tx, err := db.DB.Begin()
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to start transaction: %v", err)
+		return err
+	}
+
+	createTableQuery := `
+    CREATE TABLE IF NOT EXISTS urls (
+        uuid VARCHAR(255) PRIMARY KEY,
+        short_url TEXT NOT NULL,
+        original_url TEXT NOT NULL
+    );
+    `
+
+	if _, err := tx.Exec(createTableQuery); err != nil {
+		tx.Rollback()
+		logger.GetLogger().Errorf("Failed to create table 'urls': %v", err)
+		return err
+	}
+
+	createIndexQuery := `CREATE UNIQUE INDEX IF NOT EXISTS idx_original_url ON urls(original_url);`
+
+	if _, err := tx.Exec(createIndexQuery); err != nil {
+		tx.Rollback()
+		logger.GetLogger().Errorf("Failed to create unique index on original_url: %v", err)
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		logger.GetLogger().Errorf("Failed to commit transaction: %v", err)
+		return err
+	}
+
+	logger.GetLogger().Info("Table and unique index creation completed successfully")
+	return nil
+}
+
 func (db *DataBase) Close() {
 	db.DB.Close()
 }
+
 func (db *DataBase) Ping() error {
 	return db.DB.Ping()
 }
@@ -166,4 +187,17 @@ func (db *DataBase) BatchSaveUrls(urls []URLData) error {
 	}
 
 	return nil
+}
+
+func (db *DataBase) FindByOriginalURL(originalURL string) (string, string, error) {
+	var id, shortURL string
+	query := `SELECT uuid, short_url FROM urls WHERE original_url = $1`
+	err := db.DB.QueryRow(query, originalURL).Scan(&id, &shortURL)
+	if err == sql.ErrNoRows {
+		return "", "", fmt.Errorf("URL not found")
+	}
+	if err != nil {
+		return "", "", err
+	}
+	return id, shortURL, nil
 }

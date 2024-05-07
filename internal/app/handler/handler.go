@@ -39,6 +39,15 @@ func (h *ShortenerHandler) MainHandler(w http.ResponseWriter, r *http.Request) {
 
 	originalURL := string(body)
 
+	// написать проверку на существующий url
+	existingID, _, err := h.Storage.DataBase.FindByOriginalURL(originalURL)
+	if err == nil {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusConflict)
+		w.Write([]byte(fmt.Sprintf("%s/%s", h.BaseURL, existingID)))
+		return
+	}
+
 	_, id, err := h.Storage.Save(originalURL, h.BaseURL)
 	if err != nil {
 		http.Error(w, "Failed to create short URL", http.StatusInternalServerError)
@@ -90,7 +99,6 @@ func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
-
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST request is allowed!", http.StatusMethodNotAllowed)
 		return
@@ -115,6 +123,14 @@ func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
 
 	if input.URL == "" {
 		http.Error(w, "URL field is required", http.StatusBadRequest)
+		return
+	}
+
+	_, existingShortened, err := h.Storage.DataBase.FindByOriginalURL(input.URL)
+	if err == nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(map[string]string{"result": existingShortened})
 		return
 	}
 

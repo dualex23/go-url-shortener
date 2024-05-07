@@ -60,6 +60,22 @@ func (mr *MockDataBaseInterfaceMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockDataBaseInterface)(nil).Close))
 }
 
+// FindByOriginalURL mocks base method.
+func (m *MockDataBaseInterface) FindByOriginalURL(originalURL string) (string, string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindByOriginalURL", originalURL)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// FindByOriginalURL indicates an expected call of FindByOriginalURL.
+func (mr *MockDataBaseInterfaceMockRecorder) FindByOriginalURL(originalURL interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByOriginalURL", reflect.TypeOf((*MockDataBaseInterface)(nil).FindByOriginalURL), originalURL)
+}
+
 // LoadURLByID mocks base method.
 func (m *MockDataBaseInterface) LoadURLByID(id string) (*storage.URLData, error) {
 	m.ctrl.T.Helper()
