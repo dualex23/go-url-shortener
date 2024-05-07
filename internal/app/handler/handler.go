@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -31,32 +30,45 @@ func (h *ShortenerHandler) MainHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
+	var requestData struct {
+		URL string `json:"url"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&requestData)
 	defer r.Body.Close()
 
-	if err != nil || len(body) == 0 {
-		http.Error(w, "Request body cannot be empty", http.StatusBadRequest)
+	if err != nil {
+		http.Error(w, "Error reading JSON", http.StatusBadRequest)
 		return
 	}
 
-	originalURL := string(body)
+	if requestData.URL == "" {
+		http.Error(w, "URL field is required", http.StatusBadRequest)
+		return
+	}
 
-	storageSave, id, err := h.Storage.Save(originalURL, h.BaseURL)
+	_, id, err := h.Storage.Save(requestData.URL, h.BaseURL)
 	if err != nil {
 		http.Error(w, "Failed to create short URL", http.StatusInternalServerError)
 		return
 	}
-	fmt.Printf("test %v", storageSave)
 
-	w.Header().Set("Content-Type", "text/plain")
+	logger.GetLogger().Infoln(
+		"handler:", "MainHandler",
+		"method:", r.Method,
+		"originalURL:", requestData.URL,
+		"shortenedURL:", fmt.Sprintf("%s/%s", h.BaseURL, id),
+	)
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(fmt.Sprintf("http://localhost:8080/%s", id)))
-
+	response := map[string]string{id: fmt.Sprintf("%s/%s", h.BaseURL, id)}
+	json.NewEncoder(w).Encode(response)
 }
 
 func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
-
 	id := strings.TrimPrefix(r.URL.Path, "/")
+
+	fmt.Printf("GetHandler id = %s\n", id)
 
 	if id == "" {
 		http.Error(w, "Missing ID", http.StatusBadRequest)
@@ -73,7 +85,8 @@ func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.GetLogger().Infoln(
 		"handler:", "GetHandler",
-		"originalURL:", originalURL,
+		"method:", r.Method,
+		"requestUrl:", r.URL,
 	)
 
 	w.Header().Set("Location", originalURL)

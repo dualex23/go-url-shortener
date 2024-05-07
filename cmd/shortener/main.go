@@ -19,8 +19,6 @@ func main() {
 
 	appConfig := config.AppParseFlags()
 
-	logger.GetLogger().Infof("Configured to listen on %s with base URL %s", appConfig.ServerAddr, appConfig.BaseURL)
-
 	var storageMode string
 	if appConfig.DataBaseDSN != "" {
 		storageMode = "db"
@@ -30,7 +28,7 @@ func main() {
 		storageMode = "memory"
 	}
 
-	//logger.GetLogger().Infof("mode=%s\n", storageMode)
+	logger.GetLogger().Infof("storageMode=%s", storageMode)
 
 	if appConfig.FileStoragePath == "" {
 		logger.GetLogger().Fatal("File storage path is not specified")
@@ -56,7 +54,7 @@ func main() {
 	r.Post("/api/shorten", sh.APIHandler)
 	r.Get("/ping", sh.PingTest)
 
-	logger.GetLogger().Infof("Attempting to start server on %s", appConfig.ServerAddr)
+	logger.GetLogger().Infof("Configured to listen on %s with base URL %s", appConfig.ServerAddr, appConfig.BaseURL)
 
 	if err := http.ListenAndServe(appConfig.ServerAddr, r); err != nil {
 		logger.GetLogger().Fatal("Server failed to start", zap.Error(err))

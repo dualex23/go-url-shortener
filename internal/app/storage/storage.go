@@ -50,10 +50,15 @@ func (s *Storage) Load() error {
 }
 
 func (s *Storage) Save(originalURL string, baseURL string) (string, string, error) {
-	//logger.GetLogger().Info("Save\n")
+	logger.GetLogger().Info("Storage Save\n")
 
 	id := uuid.New().String()[:8]
 	shortURL := fmt.Sprintf("%s/%s", baseURL, id)
+
+	logger.GetLogger().Infoln(
+		"id:", id,
+		"shortURL:", shortURL,
+	)
 
 	urlData := URLData{
 		ID:          id,
@@ -63,10 +68,12 @@ func (s *Storage) Save(originalURL string, baseURL string) (string, string, erro
 
 	switch s.StorageMode {
 	case "db":
+		fmt.Printf("StorageMode db\n")
 		if err := s.DataBase.SaveUrls(urlData.ID, urlData.ShortURL, urlData.OriginalURL); err != nil {
 			return "", "", err
 		}
 	case "file":
+		fmt.Printf("StorageMode file\n")
 		s.mu.Lock()
 		s.UrlsMap[id] = urlData
 		s.mu.Unlock()
@@ -75,14 +82,22 @@ func (s *Storage) Save(originalURL string, baseURL string) (string, string, erro
 			return "", "", err
 		}
 	case "memory":
+		fmt.Printf("StorageMode memory\n")
 		s.mu.Lock()
 		s.UrlsMap[id] = urlData
 		s.mu.Unlock()
 	default:
+		fmt.Printf("StorageMode default\n")
 		s.mu.Lock()
 		s.UrlsMap[id] = urlData
 		s.mu.Unlock()
 	}
+
+	logger.GetLogger().Infoln(
+		"Name:", "Save return",
+		"shortURL:", shortURL,
+		"id:", id,
+	)
 
 	return shortURL, id, nil
 }
@@ -99,8 +114,6 @@ func (s *Storage) FindByID(id string) (string, error) {
 		}
 		return urlData.OriginalURL, nil
 	case "file", "memory":
-		logger.GetLogger().Info("case file n memory")
-
 		s.mu.Lock()
 		urlData, ok := s.UrlsMap[id]
 		s.mu.Unlock()
@@ -110,8 +123,9 @@ func (s *Storage) FindByID(id string) (string, error) {
 			return "", fmt.Errorf("no URL found with ID %s", id)
 		}
 		logger.GetLogger().Infoln(
-			"id", id,
-			"urlData:", urlData,
+			"ID:", urlData.ID,
+			"ShortUrl:", urlData.ShortURL,
+			"OriginalUrl", urlData.OriginalURL,
 		)
 		return urlData.OriginalURL, nil
 	default:

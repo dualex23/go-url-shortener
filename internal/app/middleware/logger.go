@@ -49,11 +49,11 @@ func WithLogging(next http.Handler) http.Handler {
 		duration := time.Since(start)
 
 		logger.GetLogger().Infoln(
-			"uri", uri,
-			"method", method,
-			"duration", duration,
-			"statuscode", response.status,
-			"size", response.size,
+			"uri:", uri,
+			"method:", method,
+			"duration:", duration,
+			"statuscode:", response.status,
+			"size:", response.size,
 		)
 	})
 }
