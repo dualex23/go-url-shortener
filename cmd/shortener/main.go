@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -20,8 +21,19 @@ func main() {
 	appConfig := config.AppParseFlags()
 
 	var storageMode string
+	var db *storage.DataBase
+	var err error
+
+	fmt.Printf("appConfig.FileStoragePath=%s\n", appConfig.FileStoragePath)
+
 	if appConfig.DataBaseDSN != "" {
 		storageMode = "db"
+		db, err = storage.NewDB(appConfig.DataBaseDSN)
+		if err != nil {
+			logger.GetLogger().Fatal("Failed to connect to database: ", zap.Error(err))
+			return
+		}
+		defer db.Close()
 	} else if appConfig.FileStoragePath != "" {
 		storageMode = "file"
 	} else {
@@ -30,19 +42,10 @@ func main() {
 
 	logger.GetLogger().Infof("storageMode=%s", storageMode)
 
-	if appConfig.FileStoragePath == "" {
-		logger.GetLogger().Fatal("File storage path is not specified")
-	}
-
-	db, err := storage.NewDB(appConfig.DataBaseDSN)
-	if err != nil {
-		logger.GetLogger().Fatal("Failed to connect database\n", zap.Error(err))
-	}
-	defer db.Close()
-
 	storageInstance := storage.NewStorage(appConfig.FileStoragePath, storageMode, db)
 	if storageInstance == nil {
 		logger.GetLogger().Fatal("Failed to create storage object")
+		return
 	}
 
 	sh := handler.NewShortenerHandler(appConfig.BaseURL, storageInstance)
@@ -57,6 +60,6 @@ func main() {
 	logger.GetLogger().Infof("Configured to listen on %s with base URL %s", appConfig.ServerAddr, appConfig.BaseURL)
 
 	if err := http.ListenAndServe(appConfig.ServerAddr, r); err != nil {
-		logger.GetLogger().Fatal("Server failed to start", zap.Error(err))
+		logger.GetLogger().Fatal("Server failed to start: ", zap.Error(err))
 	}
 }

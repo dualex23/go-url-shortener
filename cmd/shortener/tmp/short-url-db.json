@@ -4,9 +4,19 @@
   "short_url": "http://localhost:8080/26d7dbf5",
   "original_url": "https://yandex.ru"
  },
+ "8a0915ce": {
+  "uuid": "8a0915ce",
+  "short_url": "http://localhost:8080/8a0915ce",
+  "original_url": "https://ya.ru/"
+ },
  "ca4c0782": {
   "uuid": "ca4c0782",
   "short_url": "http://localhost:8080/ca4c0782",
+  "original_url": "https://yandex.ru"
+ },
+ "df9174ee": {
+  "uuid": "df9174ee",
+  "short_url": "http://localhost:8080/df9174ee",
   "original_url": "https://yandex.ru"
  }
 }
