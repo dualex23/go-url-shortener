@@ -1,42 +1,22 @@
-[
- {
-  "uuid": "96f6ca23",
-  "short_url": "http://localhost:8080/96f6ca23",
-  "original_url": "https://practicum.yandex.ru"
+{
+ "26d7dbf5": {
+  "uuid": "26d7dbf5",
+  "short_url": "http://localhost:8080/26d7dbf5",
+  "original_url": "https://yandex.ru"
  },
- {
-  "uuid": "a14e75ce",
-  "short_url": "http://localhost:8080/a14e75ce",
-  "original_url": "http://dwytxv4rv.com/oozbepigxn/b5snua5ilhxdy"
+ "8a0915ce": {
+  "uuid": "8a0915ce",
+  "short_url": "http://localhost:8080/8a0915ce",
+  "original_url": "https://ya.ru/"
  },
- {
-  "uuid": "96a22eed",
-  "short_url": "http://localhost:8080/96a22eed",
-  "original_url": "http://hdjzvef8.com"
+ "ca4c0782": {
+  "uuid": "ca4c0782",
+  "short_url": "http://localhost:8080/ca4c0782",
+  "original_url": "https://yandex.ru"
  },
- {
-  "uuid": "98f7d45d",
-  "short_url": "http://localhost:8080/98f7d45d",
-  "original_url": "http://wfg8niyly0x.biz/ttgnru97hast"
- },
- {
-  "uuid": "03186a5f",
-  "short_url": "http://localhost:8080/03186a5f",
-  "original_url": "http://rgaqxzyjvqfzxr.yandex/auctsgxhumsxam/clm5exo"
- },
- {
-  "uuid": "a704eaa5",
-  "short_url": "http://localhost:8080/a704eaa5",
-  "original_url": "http://fkvrq2mme4.yandex/xpjkpldusoup2/evifsie8/yaas9uyileu"
- },
- {
-  "uuid": "bb69fa43",
-  "short_url": "http://localhost:8080/bb69fa43",
-  "original_url": "http://e6ebnuyfy.ru/itum18qvso"
- },
- {
-  "uuid": "cd395ec6",
-  "short_url": "http://localhost:8080/cd395ec6",
-  "original_url": "http://p1jx6.yandex"
+ "df9174ee": {
+  "uuid": "df9174ee",
+  "short_url": "http://localhost:8080/df9174ee",
+  "original_url": "https://yandex.ru"
  }
-]
+}

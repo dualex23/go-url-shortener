@@ -2,46 +2,64 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 
 	"github.com/dualex23/go-url-shortener/internal/app/config"
 	"github.com/dualex23/go-url-shortener/internal/app/handler"
+	"github.com/dualex23/go-url-shortener/internal/app/logger"
 	"github.com/dualex23/go-url-shortener/internal/app/middleware"
 	"github.com/dualex23/go-url-shortener/internal/app/storage"
-	"github.com/dualex23/go-url-shortener/internal/app/utils"
 )
 
 func main() {
-	utils.InitLogger()
-	defer utils.GetLogger().Sync()
+	logger.New()
+	defer logger.GetLogger().Sync()
 
 	appConfig := config.AppParseFlags()
-	fmt.Printf("main FileStoragePath = %v\n", appConfig.FileStoragePath)
 
-	if appConfig.FileStoragePath == "" {
-		log.Fatal("Не указан путь к файлу хранилища")
+	var storageMode string
+	var db *storage.DataBase
+	var err error
+
+	fmt.Printf("appConfig.FileStoragePath=%s\n", appConfig.FileStoragePath)
+
+	if appConfig.DataBaseDSN != "" {
+		storageMode = "db"
+		db, err = storage.NewDB(appConfig.DataBaseDSN)
+		if err != nil {
+			logger.GetLogger().Fatal("Failed to connect to database: ", zap.Error(err))
+			return
+		}
+		defer db.Close()
+	} else if appConfig.FileStoragePath != "" {
+		storageMode = "file"
+	} else {
+		storageMode = "memory"
 	}
 
-	storage := storage.NewStorage(appConfig.FileStoragePath)
-	if storage == nil {
-		log.Fatal("Не удалось создать объект хранилища")
+	logger.GetLogger().Infof("storageMode=%s", storageMode)
+
+	storageInstance := storage.NewStorage(appConfig.FileStoragePath, storageMode, db)
+	if storageInstance == nil {
+		logger.GetLogger().Fatal("Failed to create storage object")
+		return
 	}
 
-	sh := handler.NewShortenerHandler(appConfig.BaseURL, storage)
+	sh := handler.NewShortenerHandler(appConfig.BaseURL, storageInstance)
 
 	r := chi.NewRouter()
-
 	r.Use(middleware.GzipMiddleware, middleware.WithLogging)
 	r.Post("/", sh.MainHandler)
 	r.Get("/{id}", sh.GetHandler)
 	r.Post("/api/shorten", sh.APIHandler)
+	r.Get("/ping", sh.PingTest)
 
-	fmt.Printf("Server is started: %s\n", appConfig.ServerAddr)
-	err := http.ListenAndServe(appConfig.ServerAddr, r)
-	if err != nil {
-		log.Fatal(err)
+	logger.GetLogger().Infof("Configured to listen on %s with base URL %s", appConfig.ServerAddr, appConfig.BaseURL)
+
+	if err := http.ListenAndServe(appConfig.ServerAddr, r); err != nil {
+		logger.GetLogger().Fatal("Server failed to start: ", zap.Error(err))
 	}
 }

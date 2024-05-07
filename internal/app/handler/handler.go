@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/dualex23/go-url-shortener/internal/app/logger"
 	"github.com/dualex23/go-url-shortener/internal/app/storage"
-	"github.com/google/uuid"
 )
 
 type ShortenerHandler struct {
@@ -41,30 +41,31 @@ func (h *ShortenerHandler) MainHandler(w http.ResponseWriter, r *http.Request) {
 
 	originalURL := string(body)
 
-	id := uuid.New().String()[:8]
-
-	urlData := storage.URLData{
-		ID:          id,
-		OriginalURL: originalURL,
-		ShortURL:    fmt.Sprintf("%s/%s", h.BaseURL, id),
-	}
-
-	h.Storage.UrlsData = append(h.Storage.UrlsData, urlData)
-	if err := h.Storage.SaveURLsData(); err != nil {
-		http.Error(w, "Failed to save data", http.StatusInternalServerError)
+	_, id, err := h.Storage.Save(originalURL, h.BaseURL)
+	if err != nil {
+		http.Error(w, "Failed to create short URL", http.StatusInternalServerError)
 		return
 	}
+
+	logger.GetLogger().Infoln(
+		"handler", "APIHandler",
+		"method", r.Method,
+		"originalURL", originalURL,
+		"BaseURL", h.BaseURL,
+	)
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(urlData.ShortURL))
+	w.Write([]byte(fmt.Sprintf("%s/%s", h.BaseURL, id)))
+
 }
 
 func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Only GET request is allowed!", http.StatusMethodNotAllowed)
-		return
-	}
+	logger.GetLogger().Infoln(
+		"method:", r.Method,
+		"requestUrl:", r.URL,
+		"fullPath:", r.URL.Host,
+	)
 
 	id := strings.TrimPrefix(r.URL.Path, "/")
 
@@ -73,30 +74,25 @@ func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var originalURL string
-	found := false
-	for _, data := range h.Storage.UrlsData {
-		if data.ID == id {
-			originalURL = data.OriginalURL
-			found = true
-			break
-		}
-	}
+	originalURL, err := h.Storage.FindByID(id)
+	if err != nil {
+		logger.GetLogger().Errorf("Error finding URL: %v\n", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 
-	if !found {
-		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
 
-	if strings.HasPrefix(r.URL.Path, "/") && len(r.URL.Path) > 1 {
-		w.Header().Set("Location", originalURL)
-		w.WriteHeader(http.StatusTemporaryRedirect)
-	} else {
-		w.WriteHeader(http.StatusBadRequest)
-	}
+	logger.GetLogger().Infoln(
+		"method:", r.Method,
+		"originalURL:", originalURL,
+	)
+
+	w.Header().Set("Location", originalURL)
+	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST request is allowed!", http.StatusMethodNotAllowed)
 		return
@@ -113,27 +109,47 @@ func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger.GetLogger().Infoln(
+		"handler", "APIHandler",
+		"method", r.Method,
+		"url", input.URL,
+	)
+
 	if input.URL == "" {
 		http.Error(w, "URL field is required", http.StatusBadRequest)
 		return
 	}
 
-	id := uuid.New().String()[:8]
-	shortenedURL := fmt.Sprintf("%s/%s", h.BaseURL, id)
-
-	urlData := storage.URLData{
-		ID:          id,
-		OriginalURL: input.URL,
-		ShortURL:    shortenedURL,
-	}
-
-	h.Storage.UrlsData = append(h.Storage.UrlsData, urlData)
-	if err := h.Storage.SaveURLsData(); err != nil {
-		http.Error(w, "Failed to save data", http.StatusInternalServerError)
+	shortenedURL, id, err := h.Storage.Save(input.URL, h.BaseURL)
+	if err != nil {
+		http.Error(w, "Failed to create or save URL", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+
+	logger.GetLogger().Infoln(
+		"response:", fmt.Sprintf("%s:%s", id, shortenedURL),
+	)
 	json.NewEncoder(w).Encode(map[string]string{"result": shortenedURL})
+}
+
+func (h *ShortenerHandler) PingTest(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Only Get request is allowed!", http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := h.Storage.DataBase.Ping()
+	if err != nil {
+		logger.GetLogger().Errorf("Database connection failed: %v", err)
+
+		http.Error(w, "Database connection failed", http.StatusInternalServerError)
+		h.Storage.DataBase.Close()
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Database connection successful"))
 }
