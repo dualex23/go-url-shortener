@@ -132,7 +132,7 @@ func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
 	logger.GetLogger().Infoln(
 		"response:", fmt.Sprintf("%s:%s", id, shortenedURL),
 	)
-	json.NewEncoder(w).Encode(map[string]string{id: shortenedURL})
+	json.NewEncoder(w).Encode(map[string]string{"result": shortenedURL})
 }
 
 func (h *ShortenerHandler) PingTest(w http.ResponseWriter, r *http.Request) {
