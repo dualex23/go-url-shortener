@@ -20,6 +20,7 @@ type DataBaseInterface interface {
 	SaveUrls(id, shortURL, originalURL string) error
 	LoadUrls() (map[string]URLData, error)
 	LoadURLByID(id string) (*URLData, error)
+	BatchSaveUrls(urls []URLData) error
 }
 
 func (db *DataBase) CreateTable() error {
@@ -129,4 +130,40 @@ func (db *DataBase) LoadURLByID(id string) (*URLData, error) {
 	}
 
 	return &u, nil
+}
+
+func (db *DataBase) BatchSaveUrls(urls []URLData) error {
+	// Начало транзакции
+	tx, err := db.DB.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	// В случае ошибки откат транзакции
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Подготовка запроса на вставку
+	stmt, err := tx.Prepare(`INSERT INTO urls (uuid, short_url, original_url) VALUES ($1, $2, $3) ON CONFLICT (uuid) DO NOTHING`)
+	if err != nil {
+		return fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	// Добавление каждой записи в транзакцию
+	for _, url := range urls {
+		if _, err := stmt.Exec(url.ID, url.ShortURL, url.OriginalURL); err != nil {
+			return fmt.Errorf("failed to execute statement: %w", err)
+		}
+	}
+
+	// Подтверждение транзакции
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }

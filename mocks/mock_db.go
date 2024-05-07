@@ -34,6 +34,20 @@ func (m *MockDataBaseInterface) EXPECT() *MockDataBaseInterfaceMockRecorder {
 	return m.recorder
 }
 
+// BatchSaveUrls mocks base method.
+func (m *MockDataBaseInterface) BatchSaveUrls(urls []storage.URLData) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BatchSaveUrls", urls)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BatchSaveUrls indicates an expected call of BatchSaveUrls.
+func (mr *MockDataBaseInterfaceMockRecorder) BatchSaveUrls(urls interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchSaveUrls", reflect.TypeOf((*MockDataBaseInterface)(nil).BatchSaveUrls), urls)
+}
+
 // Close mocks base method.
 func (m *MockDataBaseInterface) Close() {
 	m.ctrl.T.Helper()

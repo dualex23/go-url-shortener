@@ -7,6 +7,11 @@ import (
 	"github.com/google/uuid"
 )
 
+func GenerateID() string {
+	id := uuid.New().String()[:8]
+	return id
+}
+
 func NewStorage(fileName string, mode string, db DataBaseInterface) *Storage {
 	//logger.GetLogger().Info("NewStorage\n")
 
@@ -53,7 +58,7 @@ func (s *Storage) Load() error {
 func (s *Storage) Save(originalURL string, baseURL string) (string, string, error) {
 	logger.GetLogger().Info("Storage Save\n")
 
-	id := uuid.New().String()[:8]
+	id := GenerateID()
 	shortURL := fmt.Sprintf("%s/%s", baseURL, id)
 
 	logger.GetLogger().Infoln(
