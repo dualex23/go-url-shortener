@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -30,45 +31,43 @@ func (h *ShortenerHandler) MainHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var requestData struct {
-		URL string `json:"url"`
-	}
-	err := json.NewDecoder(r.Body).Decode(&requestData)
+	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 
-	if err != nil {
-		http.Error(w, "Error reading JSON", http.StatusBadRequest)
+	if err != nil || len(body) == 0 {
+		http.Error(w, "Request body cannot be empty", http.StatusBadRequest)
 		return
 	}
 
-	if requestData.URL == "" {
-		http.Error(w, "URL field is required", http.StatusBadRequest)
-		return
-	}
+	originalURL := string(body)
 
-	_, id, err := h.Storage.Save(requestData.URL, h.BaseURL)
+	_, id, err := h.Storage.Save(originalURL, h.BaseURL)
 	if err != nil {
 		http.Error(w, "Failed to create short URL", http.StatusInternalServerError)
 		return
 	}
 
 	logger.GetLogger().Infoln(
-		"handler:", "MainHandler",
-		"method:", r.Method,
-		"originalURL:", requestData.URL,
-		"shortenedURL:", fmt.Sprintf("%s/%s", h.BaseURL, id),
+		"handler", "APIHandler",
+		"method", r.Method,
+		"originalURL", originalURL,
+		"BaseURL", h.BaseURL,
 	)
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	response := map[string]string{id: fmt.Sprintf("%s/%s", h.BaseURL, id)}
-	json.NewEncoder(w).Encode(response)
+	w.Write([]byte(fmt.Sprintf("%s/%s", h.BaseURL, id)))
+
 }
 
 func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/")
+	logger.GetLogger().Infoln(
+		"method:", r.Method,
+		"requestUrl:", r.URL,
+		"fullPath:", r.URL.Host,
+	)
 
-	fmt.Printf("GetHandler id = %s\n", id)
+	id := strings.TrimPrefix(r.URL.Path, "/")
 
 	if id == "" {
 		http.Error(w, "Missing ID", http.StatusBadRequest)
@@ -84,9 +83,8 @@ func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.GetLogger().Infoln(
-		"handler:", "GetHandler",
 		"method:", r.Method,
-		"requestUrl:", r.URL,
+		"originalURL:", originalURL,
 	)
 
 	w.Header().Set("Location", originalURL)

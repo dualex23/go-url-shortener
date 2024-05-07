@@ -35,7 +35,7 @@ func (s *Storage) Load() error {
 			return err
 		}
 		s.UrlsMap = urls
-	case "file", "memory":
+	case "file":
 		if s.StoragePath == "" {
 			logger.GetLogger().Error("No file path specified for file-based storage.\n")
 			return nil
@@ -43,6 +43,7 @@ func (s *Storage) Load() error {
 
 		return s.LoadURLFromFile()
 	default:
+		fmt.Printf("s.UrlsMap=%v\n", s.UrlsMap)
 		logger.GetLogger().Info("Load: Using in-memory storage, no initial data loading required.\n")
 	}
 
@@ -86,6 +87,9 @@ func (s *Storage) Save(originalURL string, baseURL string) (string, string, erro
 		s.mu.Lock()
 		s.UrlsMap[id] = urlData
 		s.mu.Unlock()
+
+		//fmt.Printf("s.UrlsMap=%v\n", s.UrlsMap)
+		fmt.Printf("urlData=%v\n", urlData)
 	default:
 		fmt.Printf("StorageMode default\n")
 		s.mu.Lock()
