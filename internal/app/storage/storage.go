@@ -74,6 +74,10 @@ func (s *Storage) Save(originalURL string, baseURL string) (string, string, erro
 		if err := s.SaveURLToFile(); err != nil {
 			return "", "", err
 		}
+	case "memory":
+		s.mu.Lock()
+		s.UrlsMap[id] = urlData
+		s.mu.Unlock()
 	default:
 		s.mu.Lock()
 		s.UrlsMap[id] = urlData
