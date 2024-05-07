@@ -189,7 +189,7 @@ func TestApiHandler(t *testing.T) {
 			body:   bytes.NewReader([]byte(`{"url":"https://practicum.yandex.ru/"}`)),
 			want: want{
 				status:          http.StatusCreated,
-				responsePattern: regexp.MustCompile(`{"[a-zA-Z0-9]{8}":"` + regexp.QuoteMeta(baseURL) + `/[a-zA-Z0-9]{8}"}`),
+				responsePattern: regexp.MustCompile(`{"result":"` + regexp.QuoteMeta(baseURL) + `/[a-zA-Z0-9]{8}"}`),
 			},
 		},
 		{
