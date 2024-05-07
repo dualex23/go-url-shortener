@@ -22,7 +22,7 @@ func AppParseFlags() *App {
 
 	appConfig.ServerAddr = "localhost:8080"
 	appConfig.BaseURL = fmt.Sprintf("http://%s", appConfig.ServerAddr)
-	defaultFilePath := "/tmp/short-url-db.json"
+	defaultFilePath := ""
 
 	flag.StringVar(&appConfig.ServerAddr, "a", appConfig.ServerAddr, "Адрес запуска HTTP-сервера")
 	flag.StringVar(&appConfig.BaseURL, "b", appConfig.BaseURL, "Базовый адрес результирующего сокращённого URL")
