@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -10,20 +11,45 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dualex23/go-url-shortener/internal/app/config"
+	"github.com/dualex23/go-url-shortener/internal/app/logger"
 	"github.com/dualex23/go-url-shortener/internal/app/storage"
+	"github.com/dualex23/go-url-shortener/mocks"
+
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestMainHandler(t *testing.T) {
-	// Используем временный файл для тестирования
-	tempFile, err := os.CreateTemp("", "test-*.json")
-	if err != nil {
-		t.Fatalf("Не удалось создать временный файл: %v", err)
-	}
-	defer os.Remove(tempFile.Name()) // Удаляем после завершения теста
+func getServerAddress() string {
+	cfg := config.AppParseFlags()
+	return cfg.ServerAddr
+}
 
-	storage := storage.NewStorage(tempFile.Name())
-	handler := NewShortenerHandler("http://localhost:8080", storage)
+var baseURL string
+
+func TestMain(m *testing.M) {
+	logger.New()
+	serverAddr := getServerAddress()               // localhost:8080
+	baseURL = fmt.Sprintf("http://%s", serverAddr) // http://localhost:8080
+
+	os.Exit(m.Run())
+}
+
+func TestMainHandler(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDataBaseInterface(ctrl)
+	mockDB.EXPECT().Ping().Return(nil).AnyTimes()
+	mockDB.EXPECT().SaveUrls(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	tempFile, err := os.CreateTemp("", "test-*.json")
+	require.NoError(t, err, "Error creating temp file")
+	defer os.Remove(tempFile.Name())
+
+	storage := storage.NewStorage(tempFile.Name(), "", mockDB)
+	handler := NewShortenerHandler(baseURL, storage)
 
 	type want struct {
 		status          int
@@ -41,7 +67,7 @@ func TestMainHandler(t *testing.T) {
 			body:   strings.NewReader("https://practicum.yandex.ru/"),
 			want: want{
 				status:          http.StatusCreated,
-				responsePattern: regexp.MustCompile(`^http://localhost:8080/[a-zA-Z0-9]{8}$`),
+				responsePattern: regexp.MustCompile(fmt.Sprintf(`^%s/[a-zA-Z0-9]{8}$`, baseURL)),
 			},
 		},
 	}
@@ -58,6 +84,7 @@ func TestMainHandler(t *testing.T) {
 
 			if test.want.responsePattern != nil {
 				resBody, _ := io.ReadAll(res.Body)
+				require.NoError(t, err, "Error reading response body")
 				assert.Regexp(t, test.want.responsePattern, string(resBody))
 			}
 		})
@@ -74,11 +101,12 @@ func TestGetHandler(t *testing.T) {
 	}
 
 	storage := &storage.Storage{
-		UrlsData: []storage.URLData{
-			{ID: "validID", OriginalURL: "https://practicum.yandex.ru/", ShortURL: "http://localhost:8080/validID"},
+		UrlsMap: map[string]storage.URLData{
+			"validID": {ID: "validID", OriginalURL: "https://practicum.yandex.ru/", ShortURL: baseURL + "/validID"},
 		},
+		StorageMode: "memory",
 	}
-	handler := NewShortenerHandler("http://localhost:8080", storage)
+	handler := NewShortenerHandler(baseURL, storage)
 
 	tests := []struct {
 		name   string
@@ -131,14 +159,19 @@ func TestGetHandler(t *testing.T) {
 }
 
 func TestApiHandler(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDataBaseInterface(ctrl)
+	mockDB.EXPECT().Ping().Return(nil).AnyTimes()
+	mockDB.EXPECT().SaveUrls(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
 	tempFile, err := os.CreateTemp("", "test-*.json")
-	if err != nil {
-		t.Fatalf("Не удалось создать временный файл: %v", err)
-	}
+	require.NoError(t, err, "Couldn't create the file")
 	defer os.Remove(tempFile.Name())
 
-	storage := storage.NewStorage(tempFile.Name())
-	handler := NewShortenerHandler("http://localhost:8080", storage)
+	storage := storage.NewStorage(tempFile.Name(), "", mockDB)
+	handler := NewShortenerHandler(baseURL, storage)
 
 	type want struct {
 		status          int
@@ -156,7 +189,7 @@ func TestApiHandler(t *testing.T) {
 			body:   bytes.NewReader([]byte(`{"url":"https://practicum.yandex.ru/"}`)),
 			want: want{
 				status:          http.StatusCreated,
-				responsePattern: regexp.MustCompile(`{"result":"http://localhost:8080/[a-zA-Z0-9]{8}"}`),
+				responsePattern: regexp.MustCompile(`{"result":"` + regexp.QuoteMeta(baseURL) + `/[a-zA-Z0-9]{8}"}`),
 			},
 		},
 		{
@@ -192,9 +225,11 @@ func TestApiHandler(t *testing.T) {
 
 			assert.Equal(t, test.want.status, res.StatusCode)
 
+			resBody, err := io.ReadAll(res.Body)
+			require.NoError(t, err, "Error reading body")
+
 			if test.want.responsePattern != nil {
-				resBody, _ := io.ReadAll(res.Body)
-				assert.Regexp(t, test.want.responsePattern, string(resBody))
+				assert.Regexp(t, test.want.responsePattern, string(resBody), "Unexpected body")
 			}
 		})
 	}
