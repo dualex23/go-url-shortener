@@ -4,10 +4,20 @@
   "short_url": "http://localhost:8080/0beaeafc",
   "original_url": "https://news.com/"
  },
+ "1a97b5fd": {
+  "uuid": "1a97b5fd",
+  "short_url": "http://localhost:8080/1a97b5fd",
+  "original_url": "https://skyeng.ru/"
+ },
  "280b2c97": {
   "uuid": "280b2c97",
   "short_url": "http://localhost:8080/280b2c97",
   "original_url": "https://youtube.com/"
+ },
+ "30b0b9d4": {
+  "uuid": "30b0b9d4",
+  "short_url": "http://localhost:8080/30b0b9d4",
+  "original_url": "https://github.com/"
  },
  "31ab982c": {
   "uuid": "31ab982c",
@@ -19,9 +29,24 @@
   "short_url": "http://localhost:8080/497ab9f5",
   "original_url": "https://ok.ru"
  },
+ "5cc77272": {
+  "uuid": "5cc77272",
+  "short_url": "http://localhost:8080/5cc77272",
+  "original_url": "https://skyeng.ru/"
+ },
  "5eb5cb58": {
   "uuid": "5eb5cb58",
   "short_url": "http://localhost:8080/5eb5cb58",
+  "original_url": "https://github.com/"
+ },
+ "7587d03d": {
+  "uuid": "7587d03d",
+  "short_url": "http://localhost:8080/7587d03d",
+  "original_url": "https://skyeng.ru/"
+ },
+ "7a75bb2e": {
+  "uuid": "7a75bb2e",
+  "short_url": "http://localhost:8080/7a75bb2e",
   "original_url": "https://github.com/"
  },
  "8c4e51ac": {
@@ -29,10 +54,20 @@
   "short_url": "http://localhost:8080/8c4e51ac",
   "original_url": "https://rbk.ru"
  },
+ "8ff08b2b": {
+  "uuid": "8ff08b2b",
+  "short_url": "http://localhost:8080/8ff08b2b",
+  "original_url": "https://skyeng.ru/"
+ },
  "b5a2b5f9": {
   "uuid": "b5a2b5f9",
   "short_url": "http://localhost:8080/b5a2b5f9",
   "original_url": "https://yahoo.com/"
+ },
+ "c3d36a51": {
+  "uuid": "c3d36a51",
+  "short_url": "http://localhost:8080/c3d36a51",
+  "original_url": "https://skyeng.ru/"
  },
  "f62613f2": {
   "uuid": "f62613f2",

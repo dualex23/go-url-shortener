@@ -38,14 +38,22 @@ func (h *ShortenerHandler) MainHandler(w http.ResponseWriter, r *http.Request) {
 
 	originalURL := string(body)
 
-	ctx := r.Context()
+	if h.Storage.StorageMode == "db" && h.Storage.DataBase != nil {
+		ctx := r.Context()
+		existingID, _, err := h.Storage.DataBase.FindByOriginalURL(ctx, originalURL)
+		if err == nil {
+			logger.GetLogger().Infoln(
+				"handler:", "MainHandler",
+				"method:", r.Method,
+				"existingID:", true,
+				"BaseURL:", h.BaseURL,
+			)
 
-	existingID, _, err := h.Storage.DataBase.FindByOriginalURL(ctx, originalURL)
-	if err == nil {
-		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusConflict)
-		w.Write([]byte(fmt.Sprintf("%s/%s", h.BaseURL, existingID)))
-		return
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusConflict)
+			w.Write([]byte(fmt.Sprintf("%s/%s", h.BaseURL, existingID)))
+			return
+		}
 	}
 
 	_, id, err := h.Storage.Save(originalURL, h.BaseURL)
@@ -57,6 +65,7 @@ func (h *ShortenerHandler) MainHandler(w http.ResponseWriter, r *http.Request) {
 	logger.GetLogger().Infoln(
 		"handler:", "MainHandler",
 		"mode", h.Storage.StorageMode,
+		"existingID:", false,
 	)
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -112,33 +121,29 @@ func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.GetLogger().Infoln(
-		"handler", "APIHandler",
-		"mode", h.Storage.StorageMode,
-		"method", r.Method,
-		"url", input.URL,
-	)
-
 	if input.URL == "" {
 		http.Error(w, "URL field is required", http.StatusBadRequest)
 		return
 	}
 
 	ctx := r.Context()
-	_, existingShortened, err := h.Storage.DataBase.FindByOriginalURL(ctx, input.URL)
-	if err == nil {
-		logger.GetLogger().Infoln(
-			"handler:", "APIHandler",
-			"method:", r.Method,
-			"existingID:", true,
-			"originalURL:", existingShortened,
-			"BaseURL:", h.BaseURL,
-		)
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusConflict)
-		json.NewEncoder(w).Encode(map[string]string{"result": existingShortened})
-		return
+	if h.Storage.StorageMode == "db" && h.Storage.DataBase != nil {
+		_, existingShortened, err := h.Storage.DataBase.FindByOriginalURL(ctx, input.URL)
+		if err == nil {
+			logger.GetLogger().Infoln(
+				"handler:", "APIHandler",
+				"method:", r.Method,
+				"existingID:", true,
+				"originalURL:", existingShortened,
+				"BaseURL:", h.BaseURL,
+			)
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]string{"result": existingShortened})
+			return
+		}
 	}
 
 	shortenedURL, id, err := h.Storage.Save(input.URL, h.BaseURL)

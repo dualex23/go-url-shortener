@@ -29,6 +29,8 @@ func getServerAddress() string {
 
 var baseURL string
 
+const mode = "db"
+
 func TestMain(m *testing.M) {
 	logger.New()
 	serverAddr := getServerAddress()
@@ -50,11 +52,13 @@ func TestMainHandler(t *testing.T) {
 	mockDB.EXPECT().FindByOriginalURL(gomock.Any(), "https://newurl.yandex.ru/").Return("", "", sql.ErrNoRows).AnyTimes()
 	mockDB.EXPECT().SaveUrls(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
+	mockDB.EXPECT().LoadUrls().Return(nil, nil).AnyTimes()
+
 	tempFile, err := os.CreateTemp("", "test-*.json")
 	require.NoError(t, err, "Ошибка при создании временного файла")
 	defer os.Remove(tempFile.Name())
 
-	storage := storage.NewStorage(tempFile.Name(), "", mockDB)
+	storage := storage.NewStorage(tempFile.Name(), mode, mockDB)
 	handler := NewShortenerHandler(baseURL, storage)
 
 	tests := []struct {
@@ -193,11 +197,13 @@ func TestApiHandler(t *testing.T) {
 	mockDB.EXPECT().FindByOriginalURL(gomock.Any(), "https://new-url.yandex.ru/").Return("", "", sql.ErrNoRows).AnyTimes()
 	mockDB.EXPECT().SaveUrls(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
+	mockDB.EXPECT().LoadUrls().Return(nil, nil).AnyTimes()
+
 	tempFile, err := os.CreateTemp("", "test-*.json")
 	require.NoError(t, err, "Couldn't create the file")
 	defer os.Remove(tempFile.Name())
 
-	storage := storage.NewStorage(tempFile.Name(), "memory", mockDB)
+	storage := storage.NewStorage(tempFile.Name(), mode, mockDB)
 	handler := NewShortenerHandler(baseURL, storage)
 
 	tests := []struct {
