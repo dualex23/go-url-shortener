@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"database/sql"
 	"fmt"
 	"io"
 	"net/http"
@@ -30,8 +31,8 @@ var baseURL string
 
 func TestMain(m *testing.M) {
 	logger.New()
-	serverAddr := getServerAddress()               // localhost:8080
-	baseURL = fmt.Sprintf("http://%s", serverAddr) // http://localhost:8080
+	serverAddr := getServerAddress()
+	baseURL = fmt.Sprintf("http://%s", serverAddr)
 
 	os.Exit(m.Run())
 }
@@ -41,36 +42,56 @@ func TestMainHandler(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDataBaseInterface(ctrl)
-	mockDB.EXPECT().Ping().Return(nil).AnyTimes()
+
+	// Настраиваем мок для случая, когда URL уже существует
+	mockDB.EXPECT().FindByOriginalURL(gomock.Any(), "https://practicum.yandex.ru/").Return("existing-id", fmt.Sprintf("%s/existing-id", baseURL), nil).AnyTimes()
+
+	// Настраиваем мок для случая, когда URL не существует и нужно его создать
+	mockDB.EXPECT().FindByOriginalURL(gomock.Any(), "https://newurl.yandex.ru/").Return("", "", sql.ErrNoRows).AnyTimes()
 	mockDB.EXPECT().SaveUrls(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	tempFile, err := os.CreateTemp("", "test-*.json")
-	require.NoError(t, err, "Error creating temp file")
+	require.NoError(t, err, "Ошибка при создании временного файла")
 	defer os.Remove(tempFile.Name())
 
 	storage := storage.NewStorage(tempFile.Name(), "", mockDB)
 	handler := NewShortenerHandler(baseURL, storage)
 
-	type want struct {
-		status          int
-		responsePattern *regexp.Regexp
-	}
 	tests := []struct {
 		name   string
 		method string
 		body   io.Reader
-		want   want
+		want   struct {
+			status          int
+			responsePattern *regexp.Regexp
+		}
 	}{
 		{
-			name:   "positive test",
+			name:   "test existing URL",
 			method: http.MethodPost,
 			body:   strings.NewReader("https://practicum.yandex.ru/"),
-			want: want{
+			want: struct {
+				status          int
+				responsePattern *regexp.Regexp
+			}{
+				status:          http.StatusConflict,
+				responsePattern: regexp.MustCompile(fmt.Sprintf(`^%s/existing-id$`, baseURL)),
+			},
+		},
+		{
+			name:   "test new URL",
+			method: http.MethodPost,
+			body:   strings.NewReader("https://newurl.yandex.ru/"),
+			want: struct {
+				status          int
+				responsePattern *regexp.Regexp
+			}{
 				status:          http.StatusCreated,
 				responsePattern: regexp.MustCompile(fmt.Sprintf(`^%s/[a-zA-Z0-9]{8}$`, baseURL)),
 			},
 		},
 	}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(test.method, "/", test.body)
@@ -82,11 +103,9 @@ func TestMainHandler(t *testing.T) {
 
 			assert.Equal(t, test.want.status, res.StatusCode)
 
-			if test.want.responsePattern != nil {
-				resBody, _ := io.ReadAll(res.Body)
-				require.NoError(t, err, "Error reading response body")
-				assert.Regexp(t, test.want.responsePattern, string(resBody))
-			}
+			resBody, _ := io.ReadAll(res.Body)
+			require.NoError(t, err, "Error reading response body")
+			assert.Regexp(t, test.want.responsePattern, string(resBody))
 		})
 	}
 }
@@ -163,40 +182,65 @@ func TestApiHandler(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDB := mocks.NewMockDataBaseInterface(ctrl)
-	mockDB.EXPECT().Ping().Return(nil).AnyTimes()
+
+	// Настроить возвращение существующего URL
+	mockDB.EXPECT().
+		FindByOriginalURL(gomock.Any(), "https://practicum.yandex.ru/").
+		Return("existing-id", fmt.Sprintf("%s/existing-id", baseURL), nil).
+		AnyTimes()
+
+	// Настроить возвращение ошибки для несуществующего URL и сохранить его
+	mockDB.EXPECT().FindByOriginalURL(gomock.Any(), "https://new-url.yandex.ru/").Return("", "", sql.ErrNoRows).AnyTimes()
 	mockDB.EXPECT().SaveUrls(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	tempFile, err := os.CreateTemp("", "test-*.json")
 	require.NoError(t, err, "Couldn't create the file")
 	defer os.Remove(tempFile.Name())
 
-	storage := storage.NewStorage(tempFile.Name(), "", mockDB)
+	storage := storage.NewStorage(tempFile.Name(), "memory", mockDB)
 	handler := NewShortenerHandler(baseURL, storage)
 
-	type want struct {
-		status          int
-		responsePattern *regexp.Regexp
-	}
 	tests := []struct {
 		name   string
 		method string
 		body   io.Reader
-		want   want
+		want   struct {
+			status          int
+			responsePattern *regexp.Regexp
+		}
 	}{
 		{
-			name:   "positive test",
+			name:   "positive test - new URL",
 			method: http.MethodPost,
-			body:   bytes.NewReader([]byte(`{"url":"https://practicum.yandex.ru/"}`)),
-			want: want{
+			body:   bytes.NewReader([]byte(`{"url":"https://new-url.yandex.ru/"}`)),
+			want: struct {
+				status          int
+				responsePattern *regexp.Regexp
+			}{
 				status:          http.StatusCreated,
 				responsePattern: regexp.MustCompile(`{"result":"` + regexp.QuoteMeta(baseURL) + `/[a-zA-Z0-9]{8}"}`),
+			},
+		},
+		{
+			name:   "negative test - existing URL",
+			method: http.MethodPost,
+			body:   bytes.NewReader([]byte(`{"url":"https://practicum.yandex.ru/"}`)),
+			want: struct {
+				status          int
+				responsePattern *regexp.Regexp
+			}{
+				status:          http.StatusConflict,
+				responsePattern: regexp.MustCompile(`{"result":"` + regexp.QuoteMeta(fmt.Sprintf("%s/existing-id", baseURL)) + `"}`),
 			},
 		},
 		{
 			name:   "negative test - empty URL",
 			method: http.MethodPost,
 			body:   bytes.NewReader([]byte(`{"url":""}`)),
-			want: want{
+			want: struct {
+				status          int
+				responsePattern *regexp.Regexp
+			}{
 				status:          http.StatusBadRequest,
 				responsePattern: regexp.MustCompile(`URL field is required`),
 			},
@@ -205,7 +249,10 @@ func TestApiHandler(t *testing.T) {
 			name:   "negative test - wrong method",
 			method: http.MethodGet,
 			body:   nil,
-			want: want{
+			want: struct {
+				status          int
+				responsePattern *regexp.Regexp
+			}{
 				status:          http.StatusMethodNotAllowed,
 				responsePattern: regexp.MustCompile(`Only POST request is allowed!`),
 			},

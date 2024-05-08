@@ -1,4 +1,14 @@
 {
+ "0beaeafc": {
+  "uuid": "0beaeafc",
+  "short_url": "http://localhost:8080/0beaeafc",
+  "original_url": "https://news.com/"
+ },
+ "280b2c97": {
+  "uuid": "280b2c97",
+  "short_url": "http://localhost:8080/280b2c97",
+  "original_url": "https://youtube.com/"
+ },
  "31ab982c": {
   "uuid": "31ab982c",
   "short_url": "http://localhost:8080/31ab982c",
@@ -9,9 +19,24 @@
   "short_url": "http://localhost:8080/497ab9f5",
   "original_url": "https://ok.ru"
  },
+ "5eb5cb58": {
+  "uuid": "5eb5cb58",
+  "short_url": "http://localhost:8080/5eb5cb58",
+  "original_url": "https://github.com/"
+ },
  "8c4e51ac": {
   "uuid": "8c4e51ac",
   "short_url": "http://localhost:8080/8c4e51ac",
   "original_url": "https://rbk.ru"
+ },
+ "b5a2b5f9": {
+  "uuid": "b5a2b5f9",
+  "short_url": "http://localhost:8080/b5a2b5f9",
+  "original_url": "https://yahoo.com/"
+ },
+ "f62613f2": {
+  "uuid": "f62613f2",
+  "short_url": "http://localhost:8080/f62613f2",
+  "original_url": "https://news.com/"
  }
 }

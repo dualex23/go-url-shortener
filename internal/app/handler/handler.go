@@ -31,7 +31,6 @@ func (h *ShortenerHandler) MainHandler(w http.ResponseWriter, r *http.Request) {
 
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
-
 	if err != nil || len(body) == 0 {
 		http.Error(w, "Request body cannot be empty", http.StatusBadRequest)
 		return
@@ -39,8 +38,9 @@ func (h *ShortenerHandler) MainHandler(w http.ResponseWriter, r *http.Request) {
 
 	originalURL := string(body)
 
-	// написать проверку на существующий url
-	existingID, _, err := h.Storage.DataBase.FindByOriginalURL(originalURL)
+	ctx := r.Context()
+
+	existingID, _, err := h.Storage.DataBase.FindByOriginalURL(ctx, originalURL)
 	if err == nil {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusConflict)
@@ -55,16 +55,13 @@ func (h *ShortenerHandler) MainHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.GetLogger().Infoln(
-		"handler", "APIHandler",
-		"method", r.Method,
-		"originalURL", originalURL,
-		"BaseURL", h.BaseURL,
+		"handler:", "MainHandler",
+		"mode", h.Storage.StorageMode,
 	)
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(fmt.Sprintf("%s/%s", h.BaseURL, id)))
-
 }
 
 func (h *ShortenerHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
@@ -117,6 +114,7 @@ func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.GetLogger().Infoln(
 		"handler", "APIHandler",
+		"mode", h.Storage.StorageMode,
 		"method", r.Method,
 		"url", input.URL,
 	)
@@ -126,8 +124,17 @@ func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, existingShortened, err := h.Storage.DataBase.FindByOriginalURL(input.URL)
+	ctx := r.Context()
+	_, existingShortened, err := h.Storage.DataBase.FindByOriginalURL(ctx, input.URL)
 	if err == nil {
+		logger.GetLogger().Infoln(
+			"handler:", "APIHandler",
+			"method:", r.Method,
+			"existingID:", true,
+			"originalURL:", existingShortened,
+			"BaseURL:", h.BaseURL,
+		)
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
 		json.NewEncoder(w).Encode(map[string]string{"result": existingShortened})
@@ -139,6 +146,14 @@ func (h *ShortenerHandler) APIHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to create or save URL", http.StatusInternalServerError)
 		return
 	}
+
+	logger.GetLogger().Infoln(
+		"handler:", "APIHandler",
+		"method:", r.Method,
+		"existingID:", false,
+		"shortenedURL:", shortenedURL,
+		"BaseURL:", h.BaseURL,
+	)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -194,7 +209,6 @@ func (h *ShortenerHandler) BatchShortenHandler(w http.ResponseWriter, r *http.Re
 		})
 	}
 
-	// Сохранение всех URL-ов в одной транзакции
 	if err := h.Storage.DataBase.BatchSaveUrls(batch); err != nil {
 		http.Error(w, "Failed to save batch URLs", http.StatusInternalServerError)
 		return

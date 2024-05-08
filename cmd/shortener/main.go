@@ -57,7 +57,11 @@ func main() {
 	r.Get("/ping", sh.PingTest)
 	r.Post("/api/shorten/batch", sh.BatchShortenHandler)
 
-	logger.GetLogger().Infof("Configured to listen on %s with base URL %s", appConfig.ServerAddr, appConfig.BaseURL)
+	logger.GetLogger().Infoln(
+		"ServerAddr:", appConfig.ServerAddr,
+		"BaseURL:", appConfig.BaseURL,
+		"Mode:", storageMode,
+	)
 
 	if err := http.ListenAndServe(appConfig.ServerAddr, r); err != nil {
 		logger.GetLogger().Fatal("Server failed to start: ", zap.Error(err))

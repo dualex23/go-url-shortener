@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/dualex23/go-url-shortener/internal/app/logger"
@@ -21,7 +22,7 @@ type DataBaseInterface interface {
 	LoadUrls() (map[string]URLData, error)
 	LoadURLByID(id string) (*URLData, error)
 	BatchSaveUrls(urls []URLData) error
-	FindByOriginalURL(originalURL string) (string, string, error)
+	FindByOriginalURL(ctx context.Context, originalURL string) (string, string, error)
 }
 
 func NewDB(dataBaseDSN string) (*DataBase, error) {
@@ -154,34 +155,33 @@ func (db *DataBase) LoadURLByID(id string) (*URLData, error) {
 }
 
 func (db *DataBase) BatchSaveUrls(urls []URLData) error {
-	// Начало транзакции
+
 	tx, err := db.DB.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
+	defer tx.Rollback()
 
-	// В случае ошибки откат транзакции
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-		}
-	}()
-
-	// Подготовка запроса на вставку
-	stmt, err := tx.Prepare(`INSERT INTO urls (uuid, short_url, original_url) VALUES ($1, $2, $3) ON CONFLICT (uuid) DO NOTHING`)
+	stmt, err := tx.Prepare(`
+    INSERT INTO urls (uuid, short_url, original_url)
+    VALUES ($1, $2, $3)
+    ON CONFLICT (original_url) DO NOTHING
+    `)
 	if err != nil {
 		return fmt.Errorf("failed to prepare statement: %w", err)
 	}
 	defer stmt.Close()
 
-	// Добавление каждой записи в транзакцию
 	for _, url := range urls {
-		if _, err := stmt.Exec(url.ID, url.ShortURL, url.OriginalURL); err != nil {
+		result, err := stmt.Exec(url.ID, url.ShortURL, url.OriginalURL)
+		if err != nil {
 			return fmt.Errorf("failed to execute statement: %w", err)
+		}
+		if affected, _ := result.RowsAffected(); affected == 0 {
+			logger.GetLogger().Infoln("No rows inserted due to conflict for URL", url.OriginalURL)
 		}
 	}
 
-	// Подтверждение транзакции
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
@@ -189,15 +189,24 @@ func (db *DataBase) BatchSaveUrls(urls []URLData) error {
 	return nil
 }
 
-func (db *DataBase) FindByOriginalURL(originalURL string) (string, string, error) {
+func (db *DataBase) FindByOriginalURL(ctx context.Context, originalURL string) (string, string, error) {
+	if db.DB == nil {
+		logger.GetLogger().Infoln("database connection is not initialized")
+		return "", "", fmt.Errorf("database is not initialized")
+	}
+
 	var id, shortURL string
 	query := `SELECT uuid, short_url FROM urls WHERE original_url = $1`
-	err := db.DB.QueryRow(query, originalURL).Scan(&id, &shortURL)
-	if err == sql.ErrNoRows {
-		return "", "", fmt.Errorf("URL not found")
-	}
+	err := db.DB.QueryRowContext(ctx, query, originalURL).Scan(&id, &shortURL)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("No entry found for URL: %s", originalURL)
+			return "", "", fmt.Errorf("URL not found")
+		}
+		log.Printf("Error querying database: %v", err)
 		return "", "", err
 	}
+
+	log.Printf("Found shortened URL for %s: %s", originalURL, shortURL)
 	return id, shortURL, nil
 }
