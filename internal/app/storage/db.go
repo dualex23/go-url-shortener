@@ -21,6 +21,7 @@ type DataBaseInterface interface {
 	SaveUrls(id, shortURL, originalURL string) error
 	LoadUrls() (map[string]URLData, error)
 	LoadURLByID(id string) (*URLData, error)
+	GetUserURLs(userID int) ([]URLData, error)
 	BatchSaveUrls(urls []URLData) error
 	FindByOriginalURL(ctx context.Context, originalURL string) (string, string, error)
 }
@@ -152,6 +153,38 @@ func (db *DataBase) LoadURLByID(id string) (*URLData, error) {
 	}
 
 	return &u, nil
+}
+
+func (db *DataBase) GetUserURLs(userID int) ([]URLData, error) {
+	logger.GetLogger().Info("Loading URLs by user ID")
+	var urls []URLData
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `SELECT uuid, short_url, original_url FROM urls WHERE user_id = $1`
+	rows, err := db.DB.QueryContext(ctx, query, userID)
+	if err != nil {
+		logger.GetLogger().Errorf("Failed to execute query in GetUserURLs: %s", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var u URLData
+		if err := rows.Scan(&u.ID, &u.ShortURL, &u.OriginalURL); err != nil {
+			logger.GetLogger().Errorf("Failed to scan row in GetUserURLs: %s", err)
+			return nil, err
+		}
+		urls = append(urls, u)
+	}
+
+	if err = rows.Err(); err != nil {
+		logger.GetLogger().Errorf("Error iterating rows in GetUserURLs: %s", err)
+		return nil, err
+	}
+
+	return urls, nil
 }
 
 func (db *DataBase) BatchSaveUrls(urls []URLData) error {

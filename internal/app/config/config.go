@@ -15,6 +15,7 @@ type App struct {
 	ServerAddr      string
 	FileStoragePath string
 	DataBaseDSN     string
+	JWTkey          string
 }
 
 func AppParseFlags() *App {
@@ -22,6 +23,7 @@ func AppParseFlags() *App {
 
 	appConfig.ServerAddr = "localhost:8080"
 	appConfig.BaseURL = fmt.Sprintf("http://%s", appConfig.ServerAddr)
+
 	defaultFilePath := "/tmp/short-url-db.json"
 
 	flag.StringVar(&appConfig.ServerAddr, "a", appConfig.ServerAddr, "Адрес запуска HTTP-сервера")
@@ -46,6 +48,10 @@ func AppParseFlags() *App {
 	if envDatabaseDSN := os.Getenv("DATABASE_DSN"); envDatabaseDSN != "" && appConfig.DataBaseDSN == "" {
 		logger.GetLogger().Infof("env DATABASE_DSN = %s", envDatabaseDSN)
 		appConfig.DataBaseDSN = envDatabaseDSN
+	}
+	if envJWT := os.Getenv("JWT_TOKEN"); envJWT != "" && appConfig.JWTkey == "" {
+		logger.GetLogger().Infof("env JWT_TOKEN = %s", envJWT)
+		appConfig.JWTkey = envJWT
 	}
 
 	currentDir, err := os.Getwd()

@@ -67,6 +67,16 @@ func (s *Storage) LoadURLFromFile() error {
 	return nil
 }
 
+func (s *Storage) GetUserURLs(userID int) ([]URLData, error) {
+	var urls []URLData
+	for _, url := range s.UrlsMap {
+		if url.UserID == userID {
+			urls = append(urls, url)
+		}
+	}
+	return urls, nil
+}
+
 func ensureDir(filePath string) error {
 	dir := filepath.Dir(filePath)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {

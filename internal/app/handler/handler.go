@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/dualex23/go-url-shortener/internal/app/auth"
 	"github.com/dualex23/go-url-shortener/internal/app/logger"
 	"github.com/dualex23/go-url-shortener/internal/app/storage"
 )
@@ -224,4 +225,39 @@ func (h *ShortenerHandler) BatchShortenHandler(w http.ResponseWriter, r *http.Re
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
+}
+
+func (h *ShortenerHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
+	// Извлечение userID из контекста запроса
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Получение URL-ов пользователя
+	urls, err := h.Storage.GetUserURLs(userID)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	if len(urls) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(urls)
+}
+
+// Функция для генерации токена
+func GenerateTokenHandler(w http.ResponseWriter, r *http.Request) {
+	userID := "12345" // Тестовый идентификатор
+	token, err := auth.GenerateToken(userID)
+	if err != nil {
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		return
+	}
+	w.Write([]byte(token))
 }

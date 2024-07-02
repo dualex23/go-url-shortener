@@ -19,6 +19,8 @@ func main() {
 
 	appConfig := config.AppParseFlags()
 
+	appConfig.JWTkey = "supersecretkey"
+
 	var storageMode string
 	var db *storage.DataBase
 	var err error
@@ -56,6 +58,9 @@ func main() {
 	r.Post("/api/shorten", sh.APIHandler)
 	r.Get("/ping", sh.PingTest)
 	r.Post("/api/shorten/batch", sh.BatchShortenHandler)
+
+	r.With(middleware.Authenticate).Get("/api/user/urls", sh.GetUserURLs)
+	r.Get("/api/token", handler.GenerateTokenHandler)
 
 	logger.GetLogger().Infoln(
 		"ServerAddr:", appConfig.ServerAddr,
