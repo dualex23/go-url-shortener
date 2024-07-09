@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 
+	"github.com/dualex23/go-url-shortener/internal/app/auth"
 	"github.com/dualex23/go-url-shortener/internal/app/config"
 	"github.com/dualex23/go-url-shortener/internal/app/handler"
 	"github.com/dualex23/go-url-shortener/internal/app/logger"
@@ -19,19 +20,21 @@ func main() {
 
 	appConfig := config.AppParseFlags()
 
-	appConfig.JWTkey = "supersecretkey"
-
 	var storageMode string
 	var db *storage.DataBase
 	var err error
 
-	//fmt.Printf("appConfig.FileStoragePath=%s\n", appConfig.FileStoragePath)
+	appConfig.JWTkey = []byte("supersecretkey")
+	token, err := auth.GenerateToken("someUserID", appConfig.JWTkey)
+	if err != nil {
+		logger.GetLogger().Error("Failed to generate token:", zap.Error(err))
+	}
 
 	if appConfig.DataBaseDSN != "" {
 		storageMode = "db"
 		db, err = storage.NewDB(appConfig.DataBaseDSN)
 		if err != nil {
-			logger.GetLogger().Fatal("Failed to connect to database: ", zap.Error(err))
+			logger.GetLogger().Fatal("Failed to connect to database:", zap.Error(err))
 			return
 		}
 		defer db.Close()
@@ -40,8 +43,6 @@ func main() {
 	} else {
 		storageMode = "memory"
 	}
-
-	//logger.GetLogger().Infof("storageMode=%s", storageMode)
 
 	storageInstance := storage.NewStorage(appConfig.FileStoragePath, storageMode, db)
 	if storageInstance == nil {
@@ -59,8 +60,16 @@ func main() {
 	r.Get("/ping", sh.PingTest)
 	r.Post("/api/shorten/batch", sh.BatchShortenHandler)
 
-	r.With(middleware.Authenticate).Get("/api/user/urls", sh.GetUserURLs)
-	r.Get("/api/token", handler.GenerateTokenHandler)
+	r.With(middleware.Authenticate(appConfig.JWTkey)).Get("/api/user/urls", sh.GetUserURLs)
+	r.Get("/api/token", func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "token",
+			Value:    token,
+			Path:     "/",
+			HttpOnly: true,
+		})
+		w.Write([]byte(token))
+	})
 
 	logger.GetLogger().Infoln(
 		"ServerAddr:", appConfig.ServerAddr,
@@ -69,6 +78,6 @@ func main() {
 	)
 
 	if err := http.ListenAndServe(appConfig.ServerAddr, r); err != nil {
-		logger.GetLogger().Fatal("Server failed to start: ", zap.Error(err))
+		logger.GetLogger().Fatal("Server failed to start:", zap.Error(err))
 	}
 }
