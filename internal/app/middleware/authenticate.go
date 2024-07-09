@@ -5,38 +5,43 @@ import (
 	"net/http"
 
 	"github.com/dualex23/go-url-shortener/internal/app/auth"
-	"github.com/dualex23/go-url-shortener/internal/app/config"
+	"github.com/dualex23/go-url-shortener/internal/app/logger"
 	"github.com/golang-jwt/jwt/v4"
 )
 
-func Authenticate(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("token")
-		if err != nil {
-			if err == http.ErrNoCookie {
-				// Если кука не установлена
+func Authenticate(jwtKey []byte) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cookie, err := r.Cookie("token")
+			if err != nil {
+				logger.GetLogger().Error("Error retrieving cookie:", err)
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
-			// Для других ошибок
-			http.Error(w, "Bad Request", http.StatusBadRequest)
-			return
-		}
 
-		tokenString := cookie.Value
-		claims := &auth.Claims{}
+			logger.GetLogger().Infoln("func:", "Authenticate", "cookie:", cookie.Value)
 
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-			return config.AppParseFlags().JWTkey, nil
+			tokenString := cookie.Value
+			claims := &auth.Claims{}
+
+			token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+				return jwtKey, nil
+			})
+
+			if err != nil {
+				logger.GetLogger().Error("Error parsing token:", err)
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			if !token.Valid {
+				logger.GetLogger().Error("Invalid token")
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), auth.UserIDKey, claims.UserID)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
-
-		if err != nil || !token.Valid {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-
-		// Добавить ID пользователя в контекст запроса
-		ctx := context.WithValue(r.Context(), "userID", claims.UserID)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+	}
 }

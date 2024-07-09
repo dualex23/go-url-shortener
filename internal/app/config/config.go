@@ -15,7 +15,7 @@ type App struct {
 	ServerAddr      string
 	FileStoragePath string
 	DataBaseDSN     string
-	JWTkey          string
+	JWTkey          []byte
 }
 
 func AppParseFlags() *App {
@@ -49,10 +49,10 @@ func AppParseFlags() *App {
 		logger.GetLogger().Infof("env DATABASE_DSN = %s", envDatabaseDSN)
 		appConfig.DataBaseDSN = envDatabaseDSN
 	}
-	if envJWT := os.Getenv("JWT_TOKEN"); envJWT != "" && appConfig.JWTkey == "" {
-		logger.GetLogger().Infof("env JWT_TOKEN = %s", envJWT)
-		appConfig.JWTkey = envJWT
-	}
+	// if envJWT := os.Getenv("JWT_TOKEN"); envJWT != "" && appConfig.JWTkey == "" {
+	// 	logger.GetLogger().Infof("env JWT_TOKEN = %s", envJWT)
+	// 	appConfig.JWTkey = envJWT
+	// }
 
 	currentDir, err := os.Getwd()
 	if err != nil {

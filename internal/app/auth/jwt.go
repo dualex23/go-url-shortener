@@ -3,28 +3,31 @@ package auth
 import (
 	"time"
 
-	"github.com/dualex23/go-url-shortener/internal/app/config"
 	"github.com/golang-jwt/jwt/v4"
-) // Секретный ключ для подписи токена
+)
+
+type contextKey string
+
+const UserIDKey contextKey = "userID"
 
 // Claims структура для хранения информации в JWT
 type Claims struct {
 	UserID string `json:"userId"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 // GenerateToken создает новый JWT для пользователя
-func GenerateToken(userID string) (string, error) {
-	expirationTime := time.Now().Add(24 * time.Hour) // Токен истекает через 24 часа
+func GenerateToken(userID string, JWTtoken []byte) (string, error) {
+	expirationTime := time.Now().Add(72 * time.Hour)
 	claims := &Claims{
-		UserID: userID,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
+		UserID: userID,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(config.AppParseFlags().JWTkey)
+	tokenString, err := token.SignedString(JWTtoken)
 	if err != nil {
 		return "", err
 	}
@@ -32,11 +35,11 @@ func GenerateToken(userID string) (string, error) {
 }
 
 // ValidateToken проверяет JWT на валидность
-func ValidateToken(tokenString string) (*Claims, error) {
+func ValidateToken(tokenString string, JWTtoken []byte) (*Claims, error) {
 	claims := &Claims{}
 
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return config.AppParseFlags().JWTkey, nil
+		return JWTtoken, nil
 	})
 
 	if err != nil {

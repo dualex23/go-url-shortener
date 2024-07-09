@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/dualex23/go-url-shortener/internal/app/auth"
 	"github.com/dualex23/go-url-shortener/internal/app/logger"
 	"github.com/dualex23/go-url-shortener/internal/app/storage"
 )
@@ -252,12 +251,12 @@ func (h *ShortenerHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 }
 
 // Функция для генерации токена
-func GenerateTokenHandler(w http.ResponseWriter, r *http.Request) {
-	userID := "12345" // Тестовый идентификатор
-	token, err := auth.GenerateToken(userID)
-	if err != nil {
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
-		return
-	}
-	w.Write([]byte(token))
-}
+// func GenerateTokenHandler(w http.ResponseWriter, r *http.Request) {
+// 	userID := "12345" // Тестовый идентификатор
+// 	token, err := auth.GenerateToken(userID)
+// 	if err != nil {
+// 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	w.Write([]byte(token))
+// }
