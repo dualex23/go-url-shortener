@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dualex23/go-url-shortener/internal/app/utils"
+	"github.com/dualex23/go-url-shortener/internal/app/logger"
 )
 
 type responseData struct {
@@ -48,12 +48,12 @@ func WithLogging(next http.Handler) http.Handler {
 
 		duration := time.Since(start)
 
-		utils.GetLogger().Infoln(
-			"uri", uri,
-			"method", method,
-			"duration", duration,
-			"statuscode", response.status,
-			"size", response.size,
+		logger.GetLogger().Infoln(
+			"uri:", uri,
+			"method:", method,
+			"duration:", duration,
+			"statuscode:", response.status,
+			"size:", response.size,
 		)
 	})
 }
